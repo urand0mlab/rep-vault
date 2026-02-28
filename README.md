@@ -24,7 +24,7 @@ A mobile-first workout tracker built with **Next.js 16**, **Prisma**, and **Tail
 
 ## Environment Variables
 
-Create a `.env` file in the root based on your Supabase project:
+Create a `.env` file in the root based on your Supabase project (for Vercel deployment):
 
 ```env
 # Connect to Supabase via connection pooling with Supavisor (Transaction Mode)
@@ -37,13 +37,21 @@ DIRECT_URL="postgres://postgres.xxxxxx:password@aws-0-us-east-1.pooler.supabase.
 
 ## Getting Started
 
-### Prerequisites
+### Local Development via Docker (Recommended)
 
-- Node.js 20+
-- npm
-- Supabase account (Free tier)
+The easiest way to run the app and database locally without configuring PostgreSQL is using Docker Compose.
 
-### Installation
+```bash
+# Start the app and the Postgres database
+# This automatically runs migrations and seeds the database
+docker compose up
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Local Development (Manual Setup)
+
+If you prefer running without Docker but still using Supabase:
 
 ```bash
 # Install dependencies

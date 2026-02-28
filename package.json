@@ -1,14 +1,15 @@
 {
   "name": "workout-tracker",
   "version": "0.1.0",
-  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "docker:up": "docker compose up",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

@@ -1,0 +1,46 @@
+# https://docs.docker.com/compose/compose-file/
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: rep-vault-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rep-vault-app
+    restart: always
+    ports:
+      - '3000:3000'
+    environment:
+      # Connect directly to the local postgres container
+      DATABASE_URL: 'postgresql://postgres:postgrespassword@db:5432/postgres'
+      DIRECT_URL: 'postgresql://postgres:postgrespassword@db:5432/postgres'
+      # Keep Next.js fast in dev
+      NODE_ENV: 'development'
+      NEXT_TELEMETRY_DISABLED: '1'
+    volumes:
+      # Mount the local codebase into the container for Hot Module Replacement (HMR)
+      - .:/app
+      # Map node_modules anonymously so it uses the container's installed modules
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - db
+    # Command to ensure dependencies are installed, prisma is generated, and dev server starts
+    command: sh -c "npm install && npx prisma migrate dev --name init && npx tsx scripts/seed.ts && npm run dev"
+
+volumes:
+  pgdata:
+    driver: local
