@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model WorkoutDay {
+  id            String            @id @default(cuid())
+  date          DateTime          @unique
+  name          String?           // e.g., "Legs / Shoulders"
+  exercises     WorkoutExercise[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model Exercise {
+  id               String            @id @default(cuid())
+  name             String            @unique
+  targetMuscle     String?           // e.g., "Chest", "Quads"
+  workoutExercises WorkoutExercise[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model WorkoutExercise {
+  id             String      @id @default(cuid())
+  workoutDayId   String
+  exerciseId     String
+  sets           Int         // Planned sets
+  reps           String?     // Planned reps (e.g. "10", "Max", "8-10")
+  order          Int         @default(0) // Order in the workout
+  
+  workoutDay     WorkoutDay  @relation(fields: [workoutDayId], references: [id], onDelete: Cascade)
+  exercise       Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  
+  setLogs        SetLog[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model SetLog {
+  id                String          @id @default(cuid())
+  workoutExerciseId String
+  setNumber         Int
+  reps              Int?
+  weight            Float?
+  isCompleted       Boolean         @default(false)
+  
+  workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@unique([workoutExerciseId, setNumber])
+}
