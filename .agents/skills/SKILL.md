@@ -7,16 +7,24 @@ description: Workflow for developing, seeding, and running the Rep Vault workout
 
 ## Overview
 
-Rep Vault is a mobile-first workout tracker built with Next.js 16, Prisma (SQLite), and Tailwind CSS 4. This skill covers the standard development workflow.
+Rep Vault is a mobile-first workout tracker built with Next.js 16, Prisma (PostgreSQL), and Tailwind CSS 4. This skill covers the standard development workflow.
 
 ## Prerequisites
 
 - Node.js 20+
 - npm
+- Docker (for local database)
 
 ## Development Workflow
 
-### 1. Start Development Server
+### 1. Start Local Database
+
+```bash
+# Start PostgreSQL via Docker Compose
+npm run docker:up # or docker compose up -d
+```
+
+### 2. Start Development Server
 
 ```bash
 npm run dev
@@ -24,7 +32,7 @@ npm run dev
 
 The app runs at `http://localhost:3000`.
 
-### 2. Database Operations
+### 3. Database Operations
 
 ```bash
 # Generate Prisma client after schema changes
@@ -33,11 +41,14 @@ npx prisma generate
 # Create and apply migrations
 npx prisma migrate dev --name <migration_name>
 
+# Hard reset local DB and apply schema directly
+npx prisma db push --force-reset
+
 # Open Prisma Studio (visual database browser)
 npx prisma studio
 ```
 
-### 3. Seed & Import Data
+### 4. Seed & Import Data
 
 ```bash
 # Seed workout templates from program definition
@@ -56,7 +67,7 @@ npx tsx scripts/seed_past_history.ts
 npx tsx scripts/delete_all.ts
 ```
 
-### 4. Production Build
+### 5. Production Build
 
 ```bash
 npm run build
@@ -68,7 +79,7 @@ npm run start
 - **App Router** — All pages use Next.js App Router (`src/app/`)
 - **Server Components** — Pages fetch data server-side via Prisma
 - **Client Components** — Interactive elements (set logging, charts) use `"use client"`
-- **Database** — SQLite via Prisma, file at `prisma/dev.db`
+- **Database** — PostgreSQL hosted via Docker Compose
 - **Styling** — Tailwind CSS 4 with dark mode enabled globally
 
 ## Key Files
