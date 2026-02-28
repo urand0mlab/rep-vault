@@ -39,7 +39,7 @@ services:
     depends_on:
       - db
     # Command to ensure dependencies are installed, prisma is generated, and dev server starts
-    command: sh -c "npm install && npx prisma migrate dev --name init && npx tsx scripts/seed.ts && npm run dev"
+    command: sh -c "npm install && npx prisma migrate dev --name init && npx tsx scripts/seed.ts && npx tsx scripts/import_true_history.ts && npm run dev"
 
 volumes:
   pgdata:
