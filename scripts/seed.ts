@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('Starting seed...');
 
-    const csvFilePath = '../workouts.csv';
+    const csvFilePath = 'base_training/workouts.csv';
     if (!fs.existsSync(csvFilePath)) {
         console.error(`CSV file not found at ${csvFilePath}`);
         return;
