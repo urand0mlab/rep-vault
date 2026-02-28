@@ -22,12 +22,26 @@ A mobile-first workout tracker built with **Next.js 16**, **Prisma**, and **Tail
 | Charts | Recharts |
 | Icons | Lucide React |
 
+## Environment Variables
+
+Create a `.env` file in the root based on your Supabase project:
+
+```env
+# Connect to Supabase via connection pooling with Supavisor (Transaction Mode)
+# This is required for serverless environments like Vercel
+DATABASE_URL="postgres://postgres.xxxxxx:password@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+
+# Direct connection to the database. Used for CLI migrations (npx prisma migrate)
+DIRECT_URL="postgres://postgres.xxxxxx:password@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+```
+
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 20+
 - npm
+- Supabase account (Free tier)
 
 ### Installation
 
@@ -38,8 +52,8 @@ npm install
 # Generate Prisma client
 npx prisma generate
 
-# Run database migrations
-npx prisma migrate dev
+# Run database migrations to Supabase
+npx prisma migrate dev --name init
 
 # Seed the database with workout templates
 npx tsx scripts/seed.ts
