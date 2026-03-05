@@ -88,6 +88,17 @@ async function getWorkoutDayById(id: string) {
 async function main() {
     console.log('Fetching true logged history from Jan 1st 2026 to present...');
 
+    // Ensure default user exists
+    const defaultUser = await prisma.user.upsert({
+        where: { email: 'cristiano.corrado@gmail.com' },
+        update: {},
+        create: {
+            name: 'Cristiano',
+            email: 'cristiano.corrado@gmail.com'
+        }
+    });
+    console.log(`Using default user: ${defaultUser.id} (${defaultUser.email})`);
+
     // Calculate days between Jan 1 2026 and Today
     const startDateStr = "2026-01-01";
     const startDate = new Date(startDateStr);
@@ -116,11 +127,17 @@ async function main() {
         // Upsert WorkoutDay into the local DB
         const dateObj = new Date(`${day.date}T00:00:00.000Z`);
         const workoutDay = await prisma.workoutDay.upsert({
-            where: { date: dateObj },
+            where: {
+                date_userId: {
+                    date: dateObj,
+                    userId: defaultUser.id
+                }
+            },
             update: { name: day.workoutName },
             create: {
                 date: dateObj,
-                name: day.workoutName
+                name: day.workoutName,
+                userId: defaultUser.id
             }
         });
 

@@ -35,6 +35,17 @@ const routines = [
 async function main() {
     console.log('Generating 1 year of continuous historical workouts (2025-02-28 to 2026-02-27)...');
 
+    // Ensure default user exists
+    const defaultUser = await prisma.user.upsert({
+        where: { email: 'cristiano.corrado@gmail.com' },
+        update: {},
+        create: {
+            name: 'Cristiano',
+            email: 'cristiano.corrado@gmail.com'
+        }
+    });
+    console.log(`Using default user: ${defaultUser.id} (${defaultUser.email})`);
+
     const startDate = new Date('2025-02-28T00:00:00.000Z');
     const endDate = new Date('2026-02-27T00:00:00.000Z');
 
@@ -70,11 +81,17 @@ async function main() {
 
             // Create / upsert the workout day
             const workoutDay = await prisma.workoutDay.upsert({
-                where: { date: new Date(currentDate) },
+                where: {
+                    date_userId: {
+                        date: new Date(currentDate),
+                        userId: defaultUser.id,
+                    }
+                },
                 update: { name: routine.name },
                 create: {
                     date: new Date(currentDate),
-                    name: routine.name
+                    name: routine.name,
+                    userId: defaultUser.id
                 }
             });
 

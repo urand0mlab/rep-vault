@@ -13,6 +13,17 @@ async function main() {
         return;
     }
 
+    // Step 0: Ensure a default seed user exists for multi-tenancy
+    const defaultUser = await prisma.user.upsert({
+        where: { email: 'cristiano.corrado@gmail.com' },
+        update: {},
+        create: {
+            name: 'Cristiano',
+            email: 'cristiano.corrado@gmail.com'
+        }
+    });
+    console.log(`Using default user: ${defaultUser.id} (${defaultUser.email})`);
+
     const parser = fs.createReadStream(csvFilePath).pipe(parse({
         columns: true,
         skip_empty_lines: true
@@ -41,11 +52,17 @@ async function main() {
         const dayName = muscles.join(' / ');
 
         const workoutDay = await prisma.workoutDay.upsert({
-            where: { date: dateObj },
+            where: {
+                date_userId: {
+                    date: dateObj,
+                    userId: defaultUser.id,
+                }
+            },
             update: {},
             create: {
                 date: dateObj,
-                name: dayName
+                name: dayName,
+                userId: defaultUser.id
             }
         });
 
