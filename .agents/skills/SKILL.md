@@ -63,6 +63,11 @@ npx tsx scripts/seed_past_history.ts
 npx tsx scripts/delete_all.ts
 ```
 
+> **Note on Seeding & Passkeys (WebAuthn):**
+> Running `seed.ts` creates the default user account but *not* a Passkey credential (Authenticator). 
+> If you attempt to log into a freshly seeded account with `signIn('passkey')`, password managers like 1Password will silently fail because Auth.js is asking to "Authenticate" an account that has no valid passkey registered yet. 
+> To fix this "Chicken and Egg" scenario, you must temporarily rename the seeded email in the database to force a "Registration" flow on the frontend, then merge the newly generated Authenticator back to the old seeded User record (see `scripts/temp_rename_seed.ts` and `scripts/merge_passkey.ts`).
+
 ### 4. Production Build
 
 ```bash

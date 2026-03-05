@@ -31,3 +31,7 @@
 ## App Architecture
 - **Server Components**: Keep data fetching on the server side using direct Prisma queries.
 - **Client Components**: Add `"use client"` only at the leaves of the component tree for interactive elements (such as set logging and charts).
+
+## Authentication (Auth.js v5)
+- **Passkey Imports**: When creating a custom sign-in page, WebAuthn providers **must** use `import { signIn } from "next-auth/webauthn"` instead of the standard `next-auth/react` client bundle.
+- **Passkey Client UI**: Custom email input fields used to trigger passkey requests **must** include the attributes `name="email"` and `autoComplete="username webauthn"` to successfully hook into browser autofill and external managers (like 1Password).
