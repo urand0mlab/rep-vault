@@ -16,6 +16,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     experimental: {
         enableWebAuthn: true,
     },
+    pages: {
+        signIn: '/login',
+    },
     session: {
         strategy: "jwt"
     },

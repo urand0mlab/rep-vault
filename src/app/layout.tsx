@@ -6,8 +6,11 @@ import { BottomNav } from "@/components/BottomNav";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Anatoly Tracker",
+  title: "Rep Vault",
   description: "Track your workouts, reps, and historical progress.",
+  icons: {
+    icon: "/icon.png",
+  },
 };
 
 export default function RootLayout({
