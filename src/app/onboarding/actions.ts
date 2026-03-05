@@ -21,64 +21,139 @@ export async function completeOnboarding(formData: FormData) {
     const lifestyle = formData.get("lifestyle") as string;
     const trainingSelection = formData.get("trainingSelection") as string;
 
-    // 1. Create or Update the UserProfile
-    await prisma.userProfile.upsert({
-        where: { userId },
-        update: { height, weight, chest, leg, arm, lifestyle },
-        create: { userId, height, weight, chest, leg, arm, lifestyle },
-    });
+    try {
+        // 0. Verify the user actually exists in the database!
+        // If the database was wiped but the browser JWT remains, this will catch the mismatch.
+        const userExists = await prisma.user.findUnique({ where: { id: userId } });
+        if (!userExists) {
+            return { success: false, error: "Session invalid: Your user account was deleted from the database. Please clear your browser cookies and log in again." };
+        }
 
-    // 2. Load Base Training if selected
-    if (trainingSelection === "base") {
-        // This calls the logic we previously had in `seed.ts` but scoped entirely to this new user.
-        await setupBaseTrainingForUser(userId);
+        // 1. Create or Update the UserProfile
+        await prisma.userProfile.upsert({
+            where: { userId },
+            update: { height, weight, chest, leg, arm, lifestyle },
+            create: { userId, height, weight, chest, leg, arm, lifestyle },
+        });
+
+        // 2. Load Base Training if selected
+        if (trainingSelection === "base") {
+            // This calls the logic we previously had in `seed.ts` but scoped entirely to this new user.
+            await setupBaseTrainingForUser(userId);
+        }
+
+        // 3. Mark User Onboarding as Completed
+        await prisma.user.update({
+            where: { id: userId },
+            data: { onboardingCompleted: true },
+        });
+
+        revalidatePath("/");
+        return { success: true };
+    } catch (error: any) {
+        console.error("Onboarding Action Error:", error);
+        return { success: false, error: error.message || "An unexpected database error occurred." };
     }
-
-    // 3. Mark User Onboarding as Completed
-    await prisma.user.update({
-        where: { id: userId },
-        data: { onboardingCompleted: true },
-    });
-
-    revalidatePath("/");
-    return { success: true };
 }
 
 // Internal reusable function to attach standard Anatoly definitions to a fresh user
 async function setupBaseTrainingForUser(userId: string) {
-    // Simplified default template for demonstration
-    // Real App would pull from a master template table, but we recreate `seed.ts` behavior here
+    // We assume `seed.ts` has already populated the global `Exercise` dictionary.
 
-    // Day 1: Push
-    const day1 = await prisma.workoutDay.create({
-        data: {
-            userId,
-            date: new Date(), // Starting today
-            name: "Chest / Shoulders / Triceps",
-        }
-    });
-
-    const benchPress = await prisma.exercise.upsert({
-        where: { name: "Bench Press" },
-        update: {}, create: { name: "Bench Press", targetMuscle: "Chest" }
-    });
-
-    const d1_ex1 = await prisma.workoutExercise.create({
-        data: {
-            workoutDayId: day1.id,
-            exerciseId: benchPress.id,
-            sets: 3,
-            reps: "8-10",
-            order: 1
-        }
-    });
-
-    // Seed the empty sets
-    for (let i = 1; i <= 3; i++) {
-        await prisma.setLog.create({
-            data: { workoutExerciseId: d1_ex1.id, setNumber: i, isCompleted: false, reps: null, weight: null }
-        });
+    // Helper to find an exercise
+    const getEx = async (name: string) => {
+        const ex = await prisma.exercise.findUnique({ where: { name } });
+        if (!ex) throw new Error(`Missing global exercise: ${name}`);
+        return ex;
     }
 
-    // You can deeply copy the entire seed logic here if desired, abstracting it into a true "Template" cloner.
+    // --- DAY 1: Push ---
+    const day1 = await prisma.workoutDay.create({
+        data: { userId, date: new Date(), name: "Chest / Shoulders / Triceps" }
+    });
+
+    const d1Exercises = [
+        { name: "Bench Press", sets: 3, reps: "8-10" },
+        { name: "Incline Dumbell Press", sets: 3, reps: "10-12" },
+        { name: "Shoulder Press", sets: 3, reps: "10-12" },
+        { name: "Lateral Raises", sets: 4, reps: "12-15" },
+        { name: "Triceps Pushdowns", sets: 3, reps: "10-12" },
+        { name: "Overhead Triceps Extension", sets: 3, reps: "10-12" }
+    ];
+
+    let order = 1;
+    for (const exData of d1Exercises) {
+        const ex = await getEx(exData.name);
+        const we = await prisma.workoutExercise.create({
+            data: { workoutDayId: day1.id, exerciseId: ex.id, sets: exData.sets, reps: exData.reps, order: order++ }
+        });
+        for (let i = 1; i <= exData.sets; i++) {
+            await prisma.setLog.create({
+                data: { workoutExerciseId: we.id, setNumber: i, isCompleted: false }
+            });
+        }
+    }
+
+    // --- DAY 2: Pull ---
+    // Start Day 2 two days from now
+    const d2Date = new Date(); d2Date.setDate(d2Date.getDate() + 2);
+    const day2 = await prisma.workoutDay.create({
+        data: { userId, date: d2Date, name: "Back / Biceps" }
+    });
+
+    const d2Exercises = [
+        { name: "Pull-ups", sets: 3, reps: "Max" },
+        { name: "Barbell Rows", sets: 3, reps: "8-10" },
+        { name: "Lat Pulldowns", sets: 3, reps: "10-12" },
+        { name: "Face Pulls", sets: 3, reps: "12-15" },
+        { name: "Barbell Curls", sets: 3, reps: "10-12" },
+        { name: "Hammer Curls", sets: 3, reps: "10-12" }
+    ];
+
+    order = 1;
+    for (const exData of d2Exercises) {
+        const ex = await getEx(exData.name);
+        const we = await prisma.workoutExercise.create({
+            data: { workoutDayId: day2.id, exerciseId: ex.id, sets: exData.sets, reps: exData.reps, order: order++ }
+        });
+        for (let i = 1; i <= exData.sets; i++) {
+            await prisma.setLog.create({
+                data: { workoutExerciseId: we.id, setNumber: i, isCompleted: false }
+            });
+        }
+    }
+
+    // --- DAY 3: Legs ---
+    // Start Day 3 four days from now
+    const d3Date = new Date(); d3Date.setDate(d3Date.getDate() + 4);
+    const day3 = await prisma.workoutDay.create({
+        data: { userId, date: d3Date, name: "Legs" }
+    });
+
+    const d3Exercises = [
+        { name: "Squats", sets: 3, reps: "8-10" },
+        { name: "Leg Press", sets: 3, reps: "10-12" },
+        { name: "Leg Extensions", sets: 3, reps: "12-15" },
+        { name: "Leg Curls", sets: 3, reps: "12-15" },
+        { name: "Calf Raises", sets: 4, reps: "15-20" }
+    ];
+
+    order = 1;
+    for (const exData of d3Exercises) {
+        // Fallback for missing exercises in the global DB
+        const ex = await prisma.exercise.upsert({
+            where: { name: exData.name },
+            update: {},
+            create: { name: exData.name, targetMuscle: "Legs" }
+        });
+
+        const we = await prisma.workoutExercise.create({
+            data: { workoutDayId: day3.id, exerciseId: ex.id, sets: exData.sets, reps: exData.reps, order: order++ }
+        });
+        for (let i = 1; i <= exData.sets; i++) {
+            await prisma.setLog.create({
+                data: { workoutExerciseId: we.id, setNumber: i, isCompleted: false }
+            });
+        }
+    }
 }

@@ -13,16 +13,10 @@ async function main() {
         return;
     }
 
-    // Step 0: Ensure a default seed user exists for multi-tenancy
-    const defaultUser = await prisma.user.upsert({
-        where: { email: 'cristiano.corrado@gmail.com' },
-        update: {},
-        create: {
-            name: 'Cristiano',
-            email: 'cristiano.corrado@gmail.com'
-        }
-    });
-    console.log(`Using default user: ${defaultUser.id} (${defaultUser.email})`);
+    // Step 0: User Creation is now handled by NextAuth and Onboarding Flow!
+    // We no longer pre-seed a user, as it breaks WebAuthn Passkey registration flows.
+    // This script will now only serve to seed master tables, or act as a library for actions.ts.
+    console.log(`Skipping hardcoded user creation to protect WebAuthn flows.`);
 
     const parser = fs.createReadStream(csvFilePath).pipe(parse({
         columns: true,
@@ -43,37 +37,11 @@ async function main() {
     console.log(`Found ${Object.keys(workoutsByDate).length} unique workout days.`);
 
     for (const [date, exercises] of Object.entries(workoutsByDate)) {
-        // Parse the date accurately (assuming YYYY-MM-DD from CSV)
-        // Make sure we store it at normalized 00:00:00 UTC so querying by date is easy.
-        const dateObj = new Date(`${date}T00:00:00.000Z`);
-
-        // Let's deduce an overarching name for the day based on muscles
-        const muscles = Array.from(new Set(exercises.map(e => e.TargetMuscle).filter(Boolean)));
-        const dayName = muscles.join(' / ');
-
-        const workoutDay = await prisma.workoutDay.upsert({
-            where: {
-                date_userId: {
-                    date: dateObj,
-                    userId: defaultUser.id,
-                }
-            },
-            update: {},
-            create: {
-                date: dateObj,
-                name: dayName,
-                userId: defaultUser.id
-            }
-        });
-
-        let order = 0;
         for (const ex of exercises) {
-            order++;
-
             const exerciseName = ex.Exercise.trim();
             const targetMuscle = ex.TargetMuscle;
 
-            const exerciseRecord = await prisma.exercise.upsert({
+            await prisma.exercise.upsert({
                 where: { name: exerciseName },
                 update: {},
                 create: {
@@ -81,39 +49,8 @@ async function main() {
                     targetMuscle: targetMuscle,
                 }
             });
-
-            // Parse Sets x Reps. Examples: "4x6", "3x", "1xMax", "3x8"
-            const parts = ex.SetsReps.toLowerCase().split('x');
-            const setsStr = parts[0]?.trim();
-            const repsStr = parts.length > 1 ? parts[1]?.trim() : null;
-
-            const sets = parseInt(setsStr) || 1;
-            let finalReps = repsStr === "" ? null : repsStr;
-
-            const workoutExercise = await prisma.workoutExercise.create({
-                data: {
-                    workoutDayId: workoutDay.id,
-                    exerciseId: exerciseRecord.id,
-                    sets: sets,
-                    reps: finalReps,
-                    order: order
-                }
-            });
-
-            // Pre-populate empty set logs
-            for (let i = 1; i <= sets; i++) {
-                await prisma.setLog.create({
-                    data: {
-                        workoutExerciseId: workoutExercise.id,
-                        setNumber: i,
-                        reps: null,
-                        weight: null,
-                        isCompleted: false
-                    }
-                });
-            }
         }
-        console.log(`Seeded ${date} with ${exercises.length} exercises.`);
+        console.log(`Seeded global exercises from ${date}.`);
     }
 
     console.log('Seed completed successfully!');
