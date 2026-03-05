@@ -8,7 +8,7 @@
 
 ## Database & Environment
 - **Provider**: PostgreSQL is the default database provider. Legacy SQLite (`dev.db`) is obsolete and should not be used.
-- **Local Database**: Use Docker to spin up the local PostgreSQL database (`docker compose up -d db`).
+- **Local Development**: Use Docker to spin up the entire stack, including PostgreSQL database and the Next.js app (`docker compose up -d --build`). This automatically runs seeds and migrations.
 - **Environment Variables**: Ensure `.env` is correctly pointing to the local Docker database during active development:
   ```env
   DATABASE_URL="postgresql://postgres:postgrespassword@localhost:5432/postgres"

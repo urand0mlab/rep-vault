@@ -17,22 +17,18 @@ Rep Vault is a mobile-first workout tracker built with Next.js 16, Prisma (Postg
 
 ## Development Workflow
 
-### 1. Start Local Database
+### 1. Start Local Development Environment
 
 ```bash
-# Start PostgreSQL via Docker Compose
-npm run docker:up # or docker compose up -d
+# Start the full stack (PostgreSQL + Next.js App) via Docker Compose
+docker compose up -d --build
 ```
 
-### 2. Start Development Server
+The app automatically installs dependencies, applies migrations, seeds data, and runs at `http://localhost:3000`.
 
-```bash
-npm run dev
-```
+### 2. Database Operations
 
-The app runs at `http://localhost:3000`.
-
-### 3. Database Operations
+Since the app runs within Docker, background database schemas should ideally match. You can still run Prisma commands on your host machine to push schema changes and update the local generated client:
 
 ```bash
 # Generate Prisma client after schema changes
@@ -48,7 +44,7 @@ npx prisma db push --force-reset
 npx prisma studio
 ```
 
-### 4. Seed & Import Data
+### 3. Seed & Import Data
 
 ```bash
 # Seed workout templates from program definition
@@ -67,7 +63,7 @@ npx tsx scripts/seed_past_history.ts
 npx tsx scripts/delete_all.ts
 ```
 
-### 5. Production Build
+### 4. Production Build
 
 ```bash
 npm run build
