@@ -23,10 +23,29 @@ model User {
   // Optional for WebAuthn support
   Authenticator Authenticator[]
 
-  workoutDays   WorkoutDay[]
+  workoutDays         WorkoutDay[]
+  onboardingCompleted Boolean      @default(false)
+  profile             UserProfile?
+  
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 }
+
+model UserProfile {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  
+  height    Float? // in cm
+  weight    Float? // in kg
+  chest     Float? // in cm
+  leg       Float? // in cm
+  arm       Float? // in cm
+  
+  lifestyle String? // enum-like string: sedentary, somewhat_active, active, very_active
+  
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 
 model Account {
   userId            String
