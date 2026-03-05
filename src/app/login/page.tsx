@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn } from "next-auth/webauthn";
 import { useState } from "react";
 import { Fingerprint, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -59,12 +59,14 @@ export default function LoginPage() {
                         </label>
                         <input
                             id="email"
+                            name="email"
                             type="email"
                             placeholder="cristiano.corrado@gmail.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
                             disabled={isLoading}
+                            autoComplete="username webauthn"
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                         />
                     </div>
