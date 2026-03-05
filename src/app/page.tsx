@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ExerciseList } from "@/components/ExerciseList";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { auth } from "@/auth";
 
 export default async function Dashboard({
   searchParams
@@ -30,8 +31,18 @@ export default async function Dashboard({
   nextDate.setUTCDate(nextDate.getUTCDate() + 1);
   const nextDateStr = `${nextDate.getUTCFullYear()}-${String(nextDate.getUTCMonth() + 1).padStart(2, '0')}-${String(nextDate.getUTCDate()).padStart(2, '0')}`;
 
+  const session = await auth();
+  if (!session?.user?.id) {
+    return null; // The middleware will handle the redirect, but this is a fallback.
+  }
+
   const todayWorkout = await prisma.workoutDay.findUnique({
-    where: { date: new Date(dateString) },
+    where: {
+      date_userId: {
+        date: new Date(dateString),
+        userId: session.user.id
+      }
+    },
     include: {
       exercises: {
         orderBy: { order: "asc" },
@@ -54,6 +65,9 @@ export default async function Dashboard({
           <ChevronLeft className="h-6 w-6" />
         </Link>
         <div className="text-center">
+          <p className="text-xs font-medium tracking-tight text-primary/80 uppercase mb-1">
+            Hi {session.user.email?.split('@')[0]}!
+          </p>
           <h1 className="text-2xl font-extrabold tracking-tight">{todayWorkout?.name || "Rest Day"}</h1>
           <p className="text-muted-foreground date-header mt-0.5 text-sm">
             {formattedDate}
