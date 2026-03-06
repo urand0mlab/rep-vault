@@ -1,11 +1,20 @@
 /** @jest-environment node */
 
-import { applyAuthRateLimit, resetAuthRateLimitersForTest } from "./middleware";
 import type { NextRequest } from "next/server";
 
-jest.mock("@/auth", () => ({
-    auth: (handler: unknown) => handler,
+jest.mock("next-auth", () => ({
+    __esModule: true,
+    default: () => ({
+        auth: (handler: unknown) => handler,
+    }),
 }));
+
+jest.mock("@/auth.config", () => ({
+    __esModule: true,
+    default: {},
+}));
+
+const { applyAuthRateLimit, resetAuthRateLimitersForTest } = require("./proxy") as typeof import("./proxy");
 
 function createRequest(pathname: string, method = "POST", ip = "127.0.0.1"): NextRequest {
     return {
@@ -23,7 +32,7 @@ function createRequest(pathname: string, method = "POST", ip = "127.0.0.1"): Nex
     } as unknown as NextRequest;
 }
 
-describe("middleware auth rate limiting", () => {
+describe("proxy auth rate limiting", () => {
     beforeEach(() => {
         resetAuthRateLimitersForTest();
     });

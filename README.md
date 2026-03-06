@@ -16,7 +16,7 @@ Rep Vault is a mobile-first workout tracker built with Next.js App Router, Prism
 
 - Logout is handled by a server action (`src/app/auth/actions.ts`) that calls Auth.js `signOut` from `@/auth`.
 - This ensures cookie/session-token invalidation is performed server-side and redirects users to `/login`.
-- Login auth endpoints are rate-limited in `src/middleware.ts` for `/api/auth/*` POST requests (in-memory, per-process).
+- Login auth endpoints are rate-limited in `src/proxy.ts` for `/api/auth/*` POST requests (in-memory, per-process).
 - Login failures return a generic message to avoid exposing provider/internal error details useful for account enumeration.
 
 ## Tech Stack
