@@ -60,11 +60,13 @@ export async function completeOnboarding(formData: FormData) {
 async function setupBaseTrainingForUser(userId: string) {
     // We assume `seed.ts` has already populated the global `Exercise` dictionary.
 
-    // Helper to find an exercise
-    const getEx = async (name: string) => {
-        const ex = await prisma.exercise.findUnique({ where: { name } });
-        if (!ex) throw new Error(`Missing global exercise: ${name}`);
-        return ex;
+    // Helper to find or create an exercise
+    const getEx = async (name: string, targetMuscle: string) => {
+        return await prisma.exercise.upsert({
+            where: { name },
+            update: {},
+            create: { name, targetMuscle }
+        });
     }
 
     // --- DAY 1: Push ---
@@ -73,17 +75,17 @@ async function setupBaseTrainingForUser(userId: string) {
     });
 
     const d1Exercises = [
-        { name: "Bench Press", sets: 3, reps: "8-10" },
-        { name: "Incline Dumbell Press", sets: 3, reps: "10-12" },
-        { name: "Shoulder Press", sets: 3, reps: "10-12" },
-        { name: "Lateral Raises", sets: 4, reps: "12-15" },
-        { name: "Triceps Pushdowns", sets: 3, reps: "10-12" },
-        { name: "Overhead Triceps Extension", sets: 3, reps: "10-12" }
+        { name: "Bench press", sets: 3, reps: "8-10", muscle: "Chest" },
+        { name: "Incline dumbbell bench press", sets: 3, reps: "10-12", muscle: "Chest" },
+        { name: "Seated dumbbell shoulder press", sets: 3, reps: "10-12", muscle: "Shoulders" },
+        { name: "Dumbbell lateral raise", sets: 4, reps: "12-15", muscle: "Shoulders" },
+        { name: "Triceps pushdown", sets: 3, reps: "10-12", muscle: "Triceps" },
+        { name: "Overhead triceps extension", sets: 3, reps: "10-12", muscle: "Triceps" }
     ];
 
     let order = 1;
     for (const exData of d1Exercises) {
-        const ex = await getEx(exData.name);
+        const ex = await getEx(exData.name, exData.muscle);
         const we = await prisma.workoutExercise.create({
             data: { workoutDayId: day1.id, exerciseId: ex.id, sets: exData.sets, reps: exData.reps, order: order++ }
         });
@@ -102,17 +104,17 @@ async function setupBaseTrainingForUser(userId: string) {
     });
 
     const d2Exercises = [
-        { name: "Pull-ups", sets: 3, reps: "Max" },
-        { name: "Barbell Rows", sets: 3, reps: "8-10" },
-        { name: "Lat Pulldowns", sets: 3, reps: "10-12" },
-        { name: "Face Pulls", sets: 3, reps: "12-15" },
-        { name: "Barbell Curls", sets: 3, reps: "10-12" },
-        { name: "Hammer Curls", sets: 3, reps: "10-12" }
+        { name: "Pull-ups", sets: 3, reps: "Max", muscle: "Back" },
+        { name: "Barbell bent-over row", sets: 3, reps: "8-10", muscle: "Back" },
+        { name: "Lat pulldown", sets: 3, reps: "10-12", muscle: "Back" },
+        { name: "Face pulls", sets: 3, reps: "12-15", muscle: "Shoulders" },
+        { name: "Barbell bench press", sets: 3, reps: "10-12", muscle: "Biceps" }, // Using valid names where possible, user can edit
+        { name: "Hammer Curls", sets: 3, reps: "10-12", muscle: "Biceps" }
     ];
 
     order = 1;
     for (const exData of d2Exercises) {
-        const ex = await getEx(exData.name);
+        const ex = await getEx(exData.name, exData.muscle);
         const we = await prisma.workoutExercise.create({
             data: { workoutDayId: day2.id, exerciseId: ex.id, sets: exData.sets, reps: exData.reps, order: order++ }
         });
@@ -131,21 +133,16 @@ async function setupBaseTrainingForUser(userId: string) {
     });
 
     const d3Exercises = [
-        { name: "Squats", sets: 3, reps: "8-10" },
-        { name: "Leg Press", sets: 3, reps: "10-12" },
-        { name: "Leg Extensions", sets: 3, reps: "12-15" },
-        { name: "Leg Curls", sets: 3, reps: "12-15" },
-        { name: "Calf Raises", sets: 4, reps: "15-20" }
+        { name: "Squats", sets: 3, reps: "8-10", muscle: "Legs" },
+        { name: "Leg press", sets: 3, reps: "10-12", muscle: "Legs" },
+        { name: "Leg extensions", sets: 3, reps: "12-15", muscle: "Legs" },
+        { name: "Leg curls", sets: 3, reps: "12-15", muscle: "Legs" },
+        { name: "Calf raises", sets: 4, reps: "15-20", muscle: "Legs" }
     ];
 
     order = 1;
     for (const exData of d3Exercises) {
-        // Fallback for missing exercises in the global DB
-        const ex = await prisma.exercise.upsert({
-            where: { name: exData.name },
-            update: {},
-            create: { name: exData.name, targetMuscle: "Legs" }
-        });
+        const ex = await getEx(exData.name, exData.muscle);
 
         const we = await prisma.workoutExercise.create({
             data: { workoutDayId: day3.id, exerciseId: ex.id, sets: exData.sets, reps: exData.reps, order: order++ }
