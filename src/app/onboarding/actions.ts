@@ -29,6 +29,18 @@ export async function completeOnboarding(formData: FormData) {
             return { success: false, error: "Session invalid: Your user account was deleted from the database. Please clear your browser cookies and log in again." };
         }
 
+        // Idempotency guard: if onboarding was already completed, do not execute setup again.
+        if (userExists.onboardingCompleted) {
+            await unstable_update({
+                user: {
+                    ...session.user,
+                    onboardingCompleted: true,
+                },
+            });
+            revalidatePath("/");
+            return { success: true, alreadyCompleted: true };
+        }
+
         // 1. Create or Update the UserProfile
         await prisma.userProfile.upsert({
             where: { userId },
@@ -89,11 +101,67 @@ async function setupBaseTrainingForUser(userId: string) {
         return d;
     };
 
-    // --- DAY 1: Push ---
-    const day1 = await prisma.workoutDay.create({
-        data: { userId, date: getNormalizedDate(0), name: "Chest / Shoulders / Triceps" }
-    });
+    const upsertWorkoutDayWithExercises = async (
+        dayOffset: number,
+        dayName: string,
+        exercises: Array<{ name: string; sets: number; reps: string; muscle: string }>
+    ) => {
+        const workoutDay = await prisma.workoutDay.upsert({
+            where: {
+                date_userId: {
+                    date: getNormalizedDate(dayOffset),
+                    userId,
+                },
+            },
+            update: { name: dayName },
+            create: {
+                userId,
+                date: getNormalizedDate(dayOffset),
+                name: dayName,
+            },
+        });
 
+        let order = 1;
+        for (const exData of exercises) {
+            const ex = await getEx(exData.name, exData.muscle);
+            const currentOrder = order++;
+            const we = await prisma.workoutExercise.upsert({
+                where: {
+                    workoutDayId_exerciseId: {
+                        workoutDayId: workoutDay.id,
+                        exerciseId: ex.id,
+                    },
+                },
+                update: {
+                    sets: exData.sets,
+                    reps: exData.reps,
+                    order: currentOrder,
+                },
+                create: {
+                    workoutDayId: workoutDay.id,
+                    exerciseId: ex.id,
+                    sets: exData.sets,
+                    reps: exData.reps,
+                    order: currentOrder,
+                },
+            });
+
+            for (let i = 1; i <= exData.sets; i++) {
+                await prisma.setLog.upsert({
+                    where: {
+                        workoutExerciseId_setNumber: {
+                            workoutExerciseId: we.id,
+                            setNumber: i,
+                        },
+                    },
+                    update: { isCompleted: false },
+                    create: { workoutExerciseId: we.id, setNumber: i, isCompleted: false },
+                });
+            }
+        }
+    };
+
+    // --- DAY 1: Push ---
     const d1Exercises = [
         { name: "Bench press", sets: 3, reps: "8-10", muscle: "Chest" },
         { name: "Incline dumbbell bench press", sets: 3, reps: "10-12", muscle: "Chest" },
@@ -102,26 +170,9 @@ async function setupBaseTrainingForUser(userId: string) {
         { name: "Triceps pushdown", sets: 3, reps: "10-12", muscle: "Triceps" },
         { name: "Overhead triceps extension", sets: 3, reps: "10-12", muscle: "Triceps" }
     ];
-
-    let order = 1;
-    for (const exData of d1Exercises) {
-        const ex = await getEx(exData.name, exData.muscle);
-        const we = await prisma.workoutExercise.create({
-            data: { workoutDayId: day1.id, exerciseId: ex.id, sets: exData.sets, reps: exData.reps, order: order++ }
-        });
-        for (let i = 1; i <= exData.sets; i++) {
-            await prisma.setLog.create({
-                data: { workoutExerciseId: we.id, setNumber: i, isCompleted: false }
-            });
-        }
-    }
+    await upsertWorkoutDayWithExercises(0, "Chest / Shoulders / Triceps", d1Exercises);
 
     // --- DAY 2: Pull ---
-    // Start Day 2 two days from now
-    const day2 = await prisma.workoutDay.create({
-        data: { userId, date: getNormalizedDate(2), name: "Back / Biceps" }
-    });
-
     const d2Exercises = [
         { name: "Pull-ups", sets: 3, reps: "Max", muscle: "Back" },
         { name: "Barbell bent-over row", sets: 3, reps: "8-10", muscle: "Back" },
@@ -130,26 +181,9 @@ async function setupBaseTrainingForUser(userId: string) {
         { name: "Barbell bench press", sets: 3, reps: "10-12", muscle: "Biceps" }, // Using valid names where possible, user can edit
         { name: "Hammer Curls", sets: 3, reps: "10-12", muscle: "Biceps" }
     ];
-
-    order = 1;
-    for (const exData of d2Exercises) {
-        const ex = await getEx(exData.name, exData.muscle);
-        const we = await prisma.workoutExercise.create({
-            data: { workoutDayId: day2.id, exerciseId: ex.id, sets: exData.sets, reps: exData.reps, order: order++ }
-        });
-        for (let i = 1; i <= exData.sets; i++) {
-            await prisma.setLog.create({
-                data: { workoutExerciseId: we.id, setNumber: i, isCompleted: false }
-            });
-        }
-    }
+    await upsertWorkoutDayWithExercises(2, "Back / Biceps", d2Exercises);
 
     // --- DAY 3: Legs ---
-    // Start Day 3 four days from now
-    const day3 = await prisma.workoutDay.create({
-        data: { userId, date: getNormalizedDate(4), name: "Legs" }
-    });
-
     const d3Exercises = [
         { name: "Squats", sets: 3, reps: "8-10", muscle: "Legs" },
         { name: "Leg press", sets: 3, reps: "10-12", muscle: "Legs" },
@@ -157,18 +191,5 @@ async function setupBaseTrainingForUser(userId: string) {
         { name: "Leg curls", sets: 3, reps: "12-15", muscle: "Legs" },
         { name: "Calf raises", sets: 4, reps: "15-20", muscle: "Legs" }
     ];
-
-    order = 1;
-    for (const exData of d3Exercises) {
-        const ex = await getEx(exData.name, exData.muscle);
-
-        const we = await prisma.workoutExercise.create({
-            data: { workoutDayId: day3.id, exerciseId: ex.id, sets: exData.sets, reps: exData.reps, order: order++ }
-        });
-        for (let i = 1; i <= exData.sets; i++) {
-            await prisma.setLog.create({
-                data: { workoutExerciseId: we.id, setNumber: i, isCompleted: false }
-            });
-        }
-    }
+    await upsertWorkoutDayWithExercises(4, "Legs", d3Exercises);
 }
