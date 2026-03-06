@@ -41,3 +41,9 @@ Use this file to capture important architectural, product, and operational decis
 - Decision: Default to branch -> commit -> push branch -> PR to `main`, with direct push only when explicitly requested.
 - Impact: Better change auditability and safer releases with standard test/docs checks captured in PRs.
 - Follow-up: Maintain `.cursor/rules/pr-workflow.mdc` and `.github/pull_request_template.md`.
+
+## 2026-03-06 - Enforce server-action logout path
+- Context: Logout should invalidate auth state securely, with server-side cookie/session teardown rather than client-only state changes.
+- Decision: Add a dedicated server action (`src/app/auth/actions.ts`) that calls `signOut` from `@/auth`, and route UI logout controls through it.
+- Impact: Logout behavior is centralized, predictable, and aligned with Auth.js-managed session invalidation.
+- Follow-up: Keep logout guidance in `.cursor/rules/auth-passkey-constraints.mdc` and `README.md`.
