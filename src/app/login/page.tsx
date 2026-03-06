@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Fingerprint, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+const GENERIC_LOGIN_ERROR = "Sign in failed. Check your details and try again.";
+
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -24,15 +26,20 @@ export default function LoginPage() {
             });
 
             if (result?.error) {
-                // "AccessDenied" or other specific Auth.js errors
-                setError("Sign in failed: " + result.error);
+                // Keep login feedback generic to avoid leaking account existence/provider details.
+                await new Promise((resolve) => setTimeout(resolve, 350));
+                setError(GENERIC_LOGIN_ERROR);
             } else if (result?.ok) {
                 router.push(result.url || "/");
                 router.refresh();
+            } else {
+                await new Promise((resolve) => setTimeout(resolve, 350));
+                setError(GENERIC_LOGIN_ERROR);
             }
             // If successful, next-auth handles the redirect to callbackUrl
         } catch (err) {
-            setError("An unexpected error occurred during sign in.");
+            await new Promise((resolve) => setTimeout(resolve, 350));
+            setError(GENERIC_LOGIN_ERROR);
             console.error(err);
         } finally {
             setIsLoading(false);
