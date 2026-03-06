@@ -5,6 +5,8 @@ Rep Vault is a mobile-first workout tracker built with Next.js App Router, Prism
 ## Features
 
 - Daily dashboard with date navigation
+- Month calendar navigation (desktop sidebar, mobile inline)
+- Calendar day markers (blue: planned, green: rest)
 - Set logging for reps and weight
 - Onboarding flow for profile + lifestyle baseline
 - Workout history and progress charts
