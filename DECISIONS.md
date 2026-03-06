@@ -47,3 +47,9 @@ Use this file to capture important architectural, product, and operational decis
 - Decision: Add a dedicated server action (`src/app/auth/actions.ts`) that calls `signOut` from `@/auth`, and route UI logout controls through it.
 - Impact: Logout behavior is centralized, predictable, and aligned with Auth.js-managed session invalidation.
 - Follow-up: Keep logout guidance in `.cursor/rules/auth-passkey-constraints.mdc` and `README.md`.
+
+## 2026-03-06 - Add login anti-enumeration protections
+- Context: Passkey login flow needed protection against brute-force and account enumeration signals.
+- Decision: Add in-memory middleware throttling for `/api/auth/*` POST requests and make login failures use generic user-facing messages.
+- Impact: Reduces high-volume auth abuse per process and minimizes information leakage from provider-specific errors.
+- Follow-up: If deployed on multiple instances, replace in-memory throttling with shared storage (for example Redis) and keep limits documented in `README.md`.

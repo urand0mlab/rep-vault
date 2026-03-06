@@ -14,3 +14,5 @@ alwaysApply: false
 - Keep custom session and JWT fields strongly typed, avoid `@ts-ignore` for auth/session extensions.
 - Logout must go through a server action that calls `signOut` from `@/auth` (not client-only state clearing), redirecting to `/login`.
 - For JWT strategy, treat logout as cookie/session-token invalidation; if full server-side token revocation is required later, introduce a dedicated revocation/versioning store and enforce it in auth callbacks.
+- Apply auth-endpoint rate limiting in middleware for `/api/auth/*` POST traffic. Default to in-memory protection unless a shared limiter is introduced.
+- Keep login failure text generic (do not surface raw provider errors) to reduce user-enumeration signals.
