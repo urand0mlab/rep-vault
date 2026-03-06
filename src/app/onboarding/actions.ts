@@ -3,6 +3,9 @@
 import { auth, unstable_update } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { readFile } from "fs/promises";
+import path from "path";
+import { parse } from "csv-parse/sync";
 
 export async function completeOnboarding(formData: FormData) {
     const session = await auth();
@@ -81,7 +84,18 @@ export async function completeOnboarding(formData: FormData) {
 
 // Internal reusable function to attach standard Anatoly definitions to a fresh user
 async function setupBaseTrainingForUser(userId: string) {
-    // We assume `seed.ts` has already populated the global `Exercise` dictionary.
+    type BaseTrainingExercise = {
+        name: string;
+        sets: number;
+        reps: string | null;
+        muscle: string;
+    };
+    type CsvWorkoutRecord = {
+        Date: string;
+        Exercise: string;
+        "Sets x Reps": string;
+        "Muscular Group": string;
+    };
 
     // Helper to find or create an exercise
     const getEx = async (name: string, targetMuscle: string) => {
@@ -92,31 +106,22 @@ async function setupBaseTrainingForUser(userId: string) {
         });
     }
 
-    const today = new Date();
-    // Dashboard queries strictly by UTC midnight
-    const getNormalizedDate = (daysOffset: number = 0) => {
-        const d = new Date(today);
-        d.setUTCDate(d.getUTCDate() + daysOffset);
-        d.setUTCHours(0, 0, 0, 0);
-        return d;
-    };
-
     const upsertWorkoutDayWithExercises = async (
-        dayOffset: number,
+        targetDate: Date,
         dayName: string,
-        exercises: Array<{ name: string; sets: number; reps: string; muscle: string }>
+        exercises: BaseTrainingExercise[]
     ) => {
         const workoutDay = await prisma.workoutDay.upsert({
             where: {
                 date_userId: {
-                    date: getNormalizedDate(dayOffset),
+                    date: targetDate,
                     userId,
                 },
             },
             update: { name: dayName },
             create: {
                 userId,
-                date: getNormalizedDate(dayOffset),
+                date: targetDate,
                 name: dayName,
             },
         });
@@ -146,6 +151,13 @@ async function setupBaseTrainingForUser(userId: string) {
                 },
             });
 
+            await prisma.setLog.deleteMany({
+                where: {
+                    workoutExerciseId: we.id,
+                    setNumber: { gt: exData.sets },
+                },
+            });
+
             for (let i = 1; i <= exData.sets; i++) {
                 await prisma.setLog.upsert({
                     where: {
@@ -161,35 +173,116 @@ async function setupBaseTrainingForUser(userId: string) {
         }
     };
 
-    // --- DAY 1: Push ---
-    const d1Exercises = [
-        { name: "Bench press", sets: 3, reps: "8-10", muscle: "Chest" },
-        { name: "Incline dumbbell bench press", sets: 3, reps: "10-12", muscle: "Chest" },
-        { name: "Seated dumbbell shoulder press", sets: 3, reps: "10-12", muscle: "Shoulders" },
-        { name: "Dumbbell lateral raise", sets: 4, reps: "12-15", muscle: "Shoulders" },
-        { name: "Triceps pushdown", sets: 3, reps: "10-12", muscle: "Triceps" },
-        { name: "Overhead triceps extension", sets: 3, reps: "10-12", muscle: "Triceps" }
-    ];
-    await upsertWorkoutDayWithExercises(0, "Chest / Shoulders / Triceps", d1Exercises);
+    const upsertRestDay = async (targetDate: Date) => {
+        const restDay = await prisma.workoutDay.upsert({
+            where: {
+                date_userId: {
+                    date: targetDate,
+                    userId,
+                },
+            },
+            update: { name: "Rest Day" },
+            create: {
+                userId,
+                date: targetDate,
+                name: "Rest Day",
+            },
+        });
 
-    // --- DAY 2: Pull ---
-    const d2Exercises = [
-        { name: "Pull-ups", sets: 3, reps: "Max", muscle: "Back" },
-        { name: "Barbell bent-over row", sets: 3, reps: "8-10", muscle: "Back" },
-        { name: "Lat pulldown", sets: 3, reps: "10-12", muscle: "Back" },
-        { name: "Face pulls", sets: 3, reps: "12-15", muscle: "Shoulders" },
-        { name: "Barbell bench press", sets: 3, reps: "10-12", muscle: "Biceps" }, // Using valid names where possible, user can edit
-        { name: "Hammer Curls", sets: 3, reps: "10-12", muscle: "Biceps" }
-    ];
-    await upsertWorkoutDayWithExercises(2, "Back / Biceps", d2Exercises);
+        // Ensure rest days do not keep stale planned exercises from prior seeding attempts.
+        await prisma.workoutExercise.deleteMany({
+            where: { workoutDayId: restDay.id },
+        });
+    };
 
-    // --- DAY 3: Legs ---
-    const d3Exercises = [
-        { name: "Squats", sets: 3, reps: "8-10", muscle: "Legs" },
-        { name: "Leg press", sets: 3, reps: "10-12", muscle: "Legs" },
-        { name: "Leg extensions", sets: 3, reps: "12-15", muscle: "Legs" },
-        { name: "Leg curls", sets: 3, reps: "12-15", muscle: "Legs" },
-        { name: "Calf raises", sets: 4, reps: "15-20", muscle: "Legs" }
-    ];
-    await upsertWorkoutDayWithExercises(4, "Legs", d3Exercises);
+    const toUtcMidnight = (dateStr: string) => new Date(`${dateStr}T00:00:00.000Z`);
+    const toDateKey = (date: Date) =>
+        `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+
+    const getWorkoutNameFromMuscles = (exercises: BaseTrainingExercise[]) => {
+        const muscleVolume = new Map<string, number>();
+        for (const ex of exercises) {
+            const key = ex.muscle.trim();
+            muscleVolume.set(key, (muscleVolume.get(key) ?? 0) + ex.sets);
+        }
+        const topMuscles = Array.from(muscleVolume.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([muscle]) => muscle);
+        return topMuscles.length > 0 ? topMuscles.join(" / ") : "Base Training";
+    };
+
+    const parseSetsReps = (setsRepsRaw: string) => {
+        const [setsRaw, ...repsRawParts] = setsRepsRaw.split("x");
+        const parsedSets = Number.parseInt((setsRaw ?? "").trim(), 10);
+        const sets = Number.isFinite(parsedSets) && parsedSets > 0 ? parsedSets : 1;
+        const repsRaw = repsRawParts.join("x").trim();
+        return {
+            sets,
+            reps: repsRaw.length > 0 ? repsRaw : null,
+        };
+    };
+
+    const csvPath = path.join(process.cwd(), "base_training", "workouts.csv");
+    const csvContent = await readFile(csvPath, "utf-8");
+    const parsedRows = parse(csvContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+    }) as CsvWorkoutRecord[];
+
+    const groupedByDate = new Map<string, BaseTrainingExercise[]>();
+    for (const row of parsedRows) {
+        const dateKey = row.Date.trim();
+        if (!dateKey) continue;
+
+        const exerciseName = row.Exercise.trim();
+        const targetMuscle = row["Muscular Group"].trim() || "General";
+        const { sets, reps } = parseSetsReps(row["Sets x Reps"] ?? "");
+
+        const existing = groupedByDate.get(dateKey) ?? [];
+        const sameExercise = existing.find((ex) => ex.name === exerciseName);
+
+        if (sameExercise) {
+            sameExercise.sets += sets;
+            if (sameExercise.reps !== reps) {
+                sameExercise.reps = sameExercise.reps === null ? reps : reps === null ? sameExercise.reps : "Varied";
+            }
+        } else {
+            existing.push({
+                name: exerciseName,
+                sets,
+                reps,
+                muscle: targetMuscle,
+            });
+        }
+
+        groupedByDate.set(dateKey, existing);
+    }
+
+    const sortedDates = Array.from(groupedByDate.keys()).sort((a, b) => {
+        return toUtcMidnight(a).getTime() - toUtcMidnight(b).getTime();
+    });
+
+    if (sortedDates.length === 0) return;
+
+    const minDate = toUtcMidnight(sortedDates[0]!);
+    const maxDate = toUtcMidnight(sortedDates[sortedDates.length - 1]!);
+
+    for (
+        let cursor = new Date(minDate);
+        cursor.getTime() <= maxDate.getTime();
+        cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), cursor.getUTCDate() + 1))
+    ) {
+        const dateKey = toDateKey(cursor);
+        const dayExercises = groupedByDate.get(dateKey);
+
+        if (!dayExercises || dayExercises.length === 0) {
+            await upsertRestDay(new Date(cursor));
+            continue;
+        }
+
+        const dayName = getWorkoutNameFromMuscles(dayExercises);
+        await upsertWorkoutDayWithExercises(new Date(cursor), dayName, dayExercises);
+    }
 }
