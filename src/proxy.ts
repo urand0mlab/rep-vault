@@ -1,4 +1,7 @@
-import { auth } from "@/auth"
+import NextAuth from "next-auth";
+import authConfig from "@/auth.config";
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
     const isLoggedIn = !!req.auth;
@@ -7,8 +10,8 @@ export default auth((req) => {
 
     // 1. Unauthenticated users get sent to Login
     if (!isLoggedIn && !isLoginPage) {
-        const newUrl = new URL("/login", req.nextUrl.origin)
-        return Response.redirect(newUrl)
+        const newUrl = new URL("/login", req.nextUrl.origin);
+        return Response.redirect(newUrl);
     }
 
     // 2. Authenticated users who haven't finished onboarding MUST go to Onboarding
@@ -24,8 +27,8 @@ export default auth((req) => {
             return Response.redirect(new URL("/", req.nextUrl.origin));
         }
     }
-})
+});
 
 export const config = {
     matcher: ["/((?!api/auth|login|_next/static|_next/image|favicon.ico|icon.png).*)"],
-}
+};
