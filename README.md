@@ -10,6 +10,11 @@ Rep Vault is a mobile-first workout tracker built with Next.js App Router, Prism
 - Workout history and progress charts
 - Mobile-first dark UI
 
+## Auth Session Security
+
+- Logout is handled by a server action (`src/app/auth/actions.ts`) that calls Auth.js `signOut` from `@/auth`.
+- This ensures cookie/session-token invalidation is performed server-side and redirects users to `/login`.
+
 ## Tech Stack
 
 | Layer | Technology |

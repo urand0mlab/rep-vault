@@ -12,3 +12,5 @@ alwaysApply: false
   - `autoComplete="username webauthn"`
 - Keep RP ID configured from environment for local/prod compatibility.
 - Keep custom session and JWT fields strongly typed, avoid `@ts-ignore` for auth/session extensions.
+- Logout must go through a server action that calls `signOut` from `@/auth` (not client-only state clearing), redirecting to `/login`.
+- For JWT strategy, treat logout as cookie/session-token invalidation; if full server-side token revocation is required later, introduce a dedicated revocation/versioning store and enforce it in auth callbacks.
