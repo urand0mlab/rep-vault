@@ -35,3 +35,9 @@ Use this file to capture important architectural, product, and operational decis
 - Decision: Pin package versions in `package.json` (no caret/tilde ranges) and upgrade intentionally when needed.
 - Impact: Dependency updates become explicit, reviewable, and less exposed to accidental or compromised upstream changes.
 - Follow-up: Keep this policy in `.cursor/rules/knowledge-maintenance.mdc` and apply it to future dependency changes.
+
+## 2026-03-06 - Adopt PR-first shipping workflow
+- Context: Even as a solo contributor, shipping through PRs improves traceability and creates a consistent review checklist.
+- Decision: Default to branch -> commit -> push branch -> PR to `main`, with direct push only when explicitly requested.
+- Impact: Better change auditability and safer releases with standard test/docs checks captured in PRs.
+- Follow-up: Maintain `.cursor/rules/pr-workflow.mdc` and `.github/pull_request_template.md`.

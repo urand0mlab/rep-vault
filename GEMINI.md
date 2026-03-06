@@ -11,6 +11,7 @@ This project now uses Cursor-native rules as the source of truth for AI behavior
 - `.cursor/rules/prisma-and-scripts-safety.mdc`
 - `.cursor/rules/knowledge-maintenance.mdc`
 - `.cursor/rules/commit-and-push-workflow.mdc`
+- `.cursor/rules/pr-workflow.mdc`
 
 ## How To Maintain
 
