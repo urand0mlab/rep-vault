@@ -11,3 +11,4 @@ alwaysApply: true
 - Keep feature behavior user-scoped unless a route is explicitly public.
 - Prefer small reusable functions for domain logic that may be shared across pages/actions.
 - Keep auth and onboarding invariants consistent with middleware gating.
+- Keep infrastructure recommendations aligned with free-tier constraints in `.cursor/rules/free-tier-constraints.mdc`.
