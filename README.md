@@ -91,14 +91,16 @@ CONFIRM_DELETE_ALL=YES_DELETE_ALL_DATA npx tsx scripts/delete_all.ts
   - `.env.example` (if env/scripts change)
   - `DECISIONS.md` (for significant decisions)
 
-## Solo Commit Workflow
+## PR Workflow Standard
 
 - Commit message standard: Conventional Commits (`type(scope): short summary`)
 - Common types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
 - Before commit: check `git status`, review `git diff`, and run relevant checks (`lint`, `typecheck`, tests as needed)
 - Agent behavior:
   - By default, no commit/push unless you explicitly request it
-  - Trigger phrases like `commit and push` or `ship it` mean the agent should commit completed work and push the current branch
+  - Default shipping path is PR-first: branch -> commit -> push branch -> open PR to `main`
+  - Use direct push to `main` only when explicitly requested
+  - PR template: `.github/pull_request_template.md`
 
 ## Project Structure
 
