@@ -1,0 +1,16 @@
+---
+description: Keep recommendations compatible with free-tier hosting
+alwaysApply: true
+---
+
+# Free Tier Constraints
+
+- Assume this project runs on:
+  - Vercel Free
+  - Supabase Free
+  - GitHub Free
+- Prefer recommendations and designs that work within free-tier limits first (bandwidth, compute, DB size, connection limits, CI usage).
+- Avoid suggesting paid services/add-ons by default; present free-tier-compatible options first.
+- When a paid upgrade would materially improve reliability/performance/security, clearly label it as optional and explain trade-offs.
+- For database access in serverless contexts, prioritize connection-safe patterns (pooling, lightweight queries, caching where appropriate).
+- Keep operational overhead low: favor simple, maintainable solutions over complex infra.

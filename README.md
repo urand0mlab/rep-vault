@@ -104,6 +104,7 @@ CONFIRM_DELETE_ALL=YES_DELETE_ALL_DATA npx tsx scripts/delete_all.ts
 - Agent behavior:
   - By default, no commit/push unless you explicitly request it
   - Default shipping path is PR-first: branch -> commit -> push branch -> open PR to `main`
+  - After PR merge: switch to `main`, pull latest `origin/main`, then create a fresh branch for the next task
   - Use direct push to `main` only when explicitly requested
   - PR template: `.github/pull_request_template.md`
 
