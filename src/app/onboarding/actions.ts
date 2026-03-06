@@ -96,6 +96,14 @@ async function setupBaseTrainingForUser(userId: string) {
         "Sets x Reps": string;
         "Muscular Group": string;
     };
+    const toSafeSetCount = (value: unknown): number => {
+        const asNumber = typeof value === "number" ? value : Number(value);
+        if (!Number.isFinite(asNumber)) return 1;
+        const truncated = Math.trunc(asNumber);
+        if (truncated < 1) return 1;
+        // Prevent pathological values from creating massive set rows.
+        return Math.min(truncated, 50);
+    };
 
     // Helper to find or create an exercise
     const getEx = async (name: string, targetMuscle: string) => {
@@ -130,6 +138,7 @@ async function setupBaseTrainingForUser(userId: string) {
         for (const exData of exercises) {
             const ex = await getEx(exData.name, exData.muscle);
             const currentOrder = order++;
+            const safeSetCount = toSafeSetCount(exData.sets);
             const we = await prisma.workoutExercise.upsert({
                 where: {
                     workoutDayId_exerciseId: {
@@ -138,14 +147,14 @@ async function setupBaseTrainingForUser(userId: string) {
                     },
                 },
                 update: {
-                    sets: exData.sets,
+                    sets: safeSetCount,
                     reps: exData.reps,
                     order: currentOrder,
                 },
                 create: {
                     workoutDayId: workoutDay.id,
                     exerciseId: ex.id,
-                    sets: exData.sets,
+                    sets: safeSetCount,
                     reps: exData.reps,
                     order: currentOrder,
                 },
@@ -154,11 +163,11 @@ async function setupBaseTrainingForUser(userId: string) {
             await prisma.setLog.deleteMany({
                 where: {
                     workoutExerciseId: we.id,
-                    setNumber: { gt: exData.sets },
+                    setNumber: { gt: safeSetCount },
                 },
             });
 
-            for (let i = 1; i <= exData.sets; i++) {
+            for (let i = 1; i <= safeSetCount; i++) {
                 await prisma.setLog.upsert({
                     where: {
                         workoutExerciseId_setNumber: {
