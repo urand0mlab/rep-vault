@@ -5,6 +5,8 @@ Rep Vault is a mobile-first workout tracker built with Next.js App Router, Prism
 ## Features
 
 - Daily dashboard with date navigation
+- Month calendar navigation (desktop sidebar, mobile inline)
+- Calendar day markers (blue: planned, green: rest)
 - Set logging for reps and weight
 - Onboarding flow for profile + lifestyle baseline
 - Workout history and progress charts
@@ -14,6 +16,8 @@ Rep Vault is a mobile-first workout tracker built with Next.js App Router, Prism
 
 - Logout is handled by a server action (`src/app/auth/actions.ts`) that calls Auth.js `signOut` from `@/auth`.
 - This ensures cookie/session-token invalidation is performed server-side and redirects users to `/login`.
+- Login auth endpoints are rate-limited in `src/proxy.ts` for `/api/auth/*` POST requests (in-memory, per-process).
+- Login failures return a generic message to avoid exposing provider/internal error details useful for account enumeration.
 
 ## Tech Stack
 
@@ -42,6 +46,15 @@ DATABASE_URL="postgresql://postgres:postgrespassword@localhost:5432/postgres"
 DIRECT_URL="postgresql://postgres:postgrespassword@localhost:5432/postgres"
 AUTH_SECRET="replace-with-a-long-random-secret"
 NEXT_PUBLIC_WEBAUTHN_RPID="localhost"
+```
+
+Optional auth-throttling controls:
+
+```env
+AUTH_RATE_LIMIT_IP_MAX="20"
+AUTH_RATE_LIMIT_IP_WINDOW_MS="60000"
+AUTH_RATE_LIMIT_IP_ROUTE_MAX="10"
+AUTH_RATE_LIMIT_IP_ROUTE_WINDOW_MS="60000"
 ```
 
 ## Getting Started
