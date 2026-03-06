@@ -1,10 +1,11 @@
 "use server";
 
-import { auth } from "@/auth";
+import { auth, unstable_update } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 export async function completeOnboarding(formData: FormData) {
+    console.log("CACHE BUSTER: Executing the NEW upsert-powered onboarding action.");
     const session = await auth();
     if (!session?.user?.id) {
         throw new Error("Not authenticated");
@@ -47,6 +48,9 @@ export async function completeOnboarding(formData: FormData) {
             where: { id: userId },
             data: { onboardingCompleted: true },
         });
+
+        // Force NextAuth JWT cookie to sync with DB so Middleware lets them pass
+        await unstable_update({ onboardingCompleted: true } as any);
 
         revalidatePath("/");
         return { success: true };
