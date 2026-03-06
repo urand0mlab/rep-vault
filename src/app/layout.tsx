@@ -22,7 +22,7 @@ export default function RootLayout({
     // "dark" class forces dark mode globally
     <html lang="en" className="dark">
       <body className={`${inter.className} min-h-screen bg-background pb-20 antialiased`}>
-        <main className="mx-auto max-w-md p-4">
+        <main className="mx-auto w-full max-w-md p-4 lg:max-w-6xl">
           {children}
         </main>
         <BottomNav />

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ExerciseList } from "@/components/ExerciseList";
+import { DateCalendarNav } from "@/components/DateCalendarNav";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { auth } from "@/auth";
@@ -20,7 +21,8 @@ export default async function Dashboard({
     }
   }
 
-  const dateString = `${targetDate.getUTCFullYear()}-${String(targetDate.getUTCMonth() + 1).padStart(2, '0')}-${String(targetDate.getUTCDate()).padStart(2, '0')}T00:00:00.000Z`;
+  const selectedDateStr = `${targetDate.getUTCFullYear()}-${String(targetDate.getUTCMonth() + 1).padStart(2, "0")}-${String(targetDate.getUTCDate()).padStart(2, "0")}`;
+  const dateString = `${selectedDateStr}T00:00:00.000Z`;
 
   // Calculate Previous and Next days for navigation
   const prevDate = new Date(targetDate);
@@ -56,37 +58,60 @@ export default async function Dashboard({
     }
   });
 
+  const workoutDays = await prisma.workoutDay.findMany({
+    where: { userId: session.user.id },
+    select: { date: true, name: true },
+  });
+
+  const activityByDate: Record<string, "planned" | "rest"> = {};
+  for (const day of workoutDays) {
+    const dateKey = `${day.date.getUTCFullYear()}-${String(day.date.getUTCMonth() + 1).padStart(2, "0")}-${String(day.date.getUTCDate()).padStart(2, "0")}`;
+    activityByDate[dateKey] = day.name === "Rest Day" ? "rest" : "planned";
+  }
+
   const formattedDate = targetDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between">
-        <Link href={`/?date=${prevDateStr}`} className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
-          <ChevronLeft className="h-6 w-6" />
-        </Link>
-        <div className="text-center">
-          <p className="text-xs font-medium tracking-tight text-primary/80 uppercase mb-1">
-            Hi {session.user.email?.split('@')[0]}!
-          </p>
-          <h1 className="text-2xl font-extrabold tracking-tight">{todayWorkout?.name || "Rest Day"}</h1>
-          <p className="text-muted-foreground date-header mt-0.5 text-sm">
-            {formattedDate}
-          </p>
-        </div>
-        <Link href={`/?date=${nextDateStr}`} className="p-2 -mr-2 text-muted-foreground hover:text-foreground transition-colors">
-          <ChevronRight className="h-6 w-6" />
-        </Link>
-      </header>
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="flex flex-col gap-6">
+        <header className="flex items-center justify-between">
+          <Link href={`/?date=${prevDateStr}`} className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
+            <ChevronLeft className="h-6 w-6" />
+          </Link>
+          <div className="text-center">
+            <p className="text-xs font-medium tracking-tight text-primary/80 uppercase mb-1">
+              Hi {session.user.email?.split("@")[0]}!
+            </p>
+            <h1 className="text-2xl font-extrabold tracking-tight">{todayWorkout?.name || "Rest Day"}</h1>
+            <p className="text-muted-foreground date-header mt-0.5 text-sm">
+              {formattedDate}
+            </p>
+          </div>
+          <Link href={`/?date=${nextDateStr}`} className="p-2 -mr-2 text-muted-foreground hover:text-foreground transition-colors">
+            <ChevronRight className="h-6 w-6" />
+          </Link>
+        </header>
 
-      {!todayWorkout ? (
-        <div className="flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed bg-muted/20 mt-10">
-          <p className="text-muted-foreground">No planned exercises for this date. Enjoy your rest!</p>
+        <div className="lg:hidden">
+          <DateCalendarNav selectedDate={selectedDateStr} activityByDate={activityByDate} />
         </div>
-      ) : (
-        <div className="space-y-8 pb-10">
-          <ExerciseList exercises={todayWorkout.exercises} />
+
+        {!todayWorkout ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed bg-muted/20 mt-10">
+            <p className="text-muted-foreground">No planned exercises for this date. Enjoy your rest!</p>
+          </div>
+        ) : (
+          <div className="space-y-8 pb-10">
+            <ExerciseList exercises={todayWorkout.exercises} />
+          </div>
+        )}
+      </div>
+
+      <div className="hidden lg:block">
+        <div className="sticky top-4">
+          <DateCalendarNav selectedDate={selectedDateStr} activityByDate={activityByDate} />
         </div>
-      )}
+      </div>
     </div>
   );
 }
