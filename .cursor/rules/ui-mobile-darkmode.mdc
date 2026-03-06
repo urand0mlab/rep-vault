@@ -1,0 +1,12 @@
+---
+description: Mobile-first and dark-mode UI expectations
+globs: src/{app,components}/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# UI Constraints
+
+- Prioritize mobile-first layouts and touch-friendly controls.
+- Preserve dark mode compatibility for new and modified UI elements.
+- Keep dense interactions clear and readable on small screens.
+- Place heavy interactivity in client components and keep data fetching server-side where practical.

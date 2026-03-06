@@ -1,0 +1,15 @@
+---
+description: Preserve onboarding routing and completion invariants
+globs: src/{middleware.ts,auth.ts,app/onboarding/**/*.{ts,tsx}}
+alwaysApply: false
+---
+
+# Onboarding Invariants
+
+- Unauthenticated users are redirected to `/login` for protected routes.
+- Authenticated users with incomplete onboarding are redirected to `/onboarding`.
+- Users with completed onboarding should not remain on `/login` or `/onboarding`.
+- The onboarding completion action must:
+  - Persist profile metrics and lifestyle data.
+  - Mark onboarding as completed in the user record.
+  - Synchronize session state so middleware reflects the new completion flag.

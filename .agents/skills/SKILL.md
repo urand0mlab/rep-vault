@@ -8,6 +8,7 @@ description: Workflow for developing, seeding, and running the Rep Vault workout
 ## Overview
 
 Rep Vault is a mobile-first workout tracker built with Next.js 16, Prisma (PostgreSQL), and Tailwind CSS 4. This skill covers the standard development workflow.
+Primary persistent agent guidance now lives in `.cursor/rules/*.mdc`.
 
 ## Prerequisites
 
@@ -24,7 +25,8 @@ Rep Vault is a mobile-first workout tracker built with Next.js 16, Prisma (Postg
 docker compose up -d --build
 ```
 
-The app automatically installs dependencies, applies migrations, seeds data, and runs at `http://localhost:3000`.
+The app installs dependencies, applies migrations, seeds base data, and runs at `http://localhost:3000`.
+Historical import is opt-in with `RUN_IMPORT_ON_STARTUP=true`.
 
 ### 2. Database Operations
 
@@ -37,9 +39,6 @@ npx prisma generate
 # Create and apply migrations
 npx prisma migrate dev --name <migration_name>
 
-# Hard reset local DB and apply schema directly
-npx prisma db push --force-reset
-
 # Open Prisma Studio (visual database browser)
 npx prisma studio
 ```
@@ -51,6 +50,7 @@ npx prisma studio
 npx tsx scripts/seed.ts
 
 # Import real historical data from Anatoly Fit API
+# Requires ANATOLY_* environment variables
 npx tsx scripts/import_true_history.ts
 
 # Generate fake workout logs for testing
@@ -60,13 +60,16 @@ npx tsx scripts/seed_fake_logs.ts
 npx tsx scripts/seed_past_history.ts
 
 # Delete all data (reset database)
+# Requires explicit confirmation env guard
 npx tsx scripts/delete_all.ts
 ```
 
+> **Security Note**
+> Never hardcode API tokens, cookies, or personal email addresses in scripts.
+> To run destructive wipe safely: `CONFIRM_DELETE_ALL=YES_DELETE_ALL_DATA npx tsx scripts/delete_all.ts`
+
 > **Note on Seeding & Passkeys (WebAuthn):**
-> Running `seed.ts` creates the default user account but *not* a Passkey credential (Authenticator). 
-> If you attempt to log into a freshly seeded account with `signIn('passkey')`, password managers like 1Password will silently fail because Auth.js is asking to "Authenticate" an account that has no valid passkey registered yet. 
-> To fix this "Chicken and Egg" scenario, you must temporarily rename the seeded email in the database to force a "Registration" flow on the frontend, then merge the newly generated Authenticator back to the old seeded User record (see `scripts/temp_rename_seed.ts` and `scripts/merge_passkey.ts`).
+> User creation and onboarding completion are handled through Auth.js + onboarding flow, not by hardcoded seed users.
 
 ### 4. Production Build
 

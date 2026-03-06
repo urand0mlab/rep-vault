@@ -27,20 +27,18 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
             // When user first signs in, 'user' object is available from adapter
             if (user) {
                 token.sub = user.id
-                // @ts-ignore - Prisma Adapter type might not immediately catch new custom fields
-                token.onboardingCompleted = (user as any).onboardingCompleted ?? false;
+                token.onboardingCompleted = user.onboardingCompleted ?? false;
             }
             // If we manually call server-side session update after onboarding finishes
-            if (trigger === "update" && session?.onboardingCompleted !== undefined) {
-                token.onboardingCompleted = session.onboardingCompleted;
+            if (trigger === "update" && session?.user?.onboardingCompleted !== undefined) {
+                token.onboardingCompleted = session.user.onboardingCompleted;
             }
             return token;
         },
         async session({ session, token }) {
             if (session.user && token.sub) {
                 session.user.id = token.sub;
-                // @ts-ignore - extending NextAuth session typing
-                session.user.onboardingCompleted = token.onboardingCompleted as boolean;
+                session.user.onboardingCompleted = token.onboardingCompleted ?? false;
             }
             return session;
         }

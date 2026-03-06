@@ -1,0 +1,13 @@
+---
+description: Core architecture and stack defaults for Rep Vault
+alwaysApply: true
+---
+
+# Rep Vault Architecture Defaults
+
+- Use Next.js App Router patterns in `src/app`.
+- Keep server-side data access on server components and server actions.
+- Use Prisma as the only ORM and PostgreSQL as the runtime database provider.
+- Keep feature behavior user-scoped unless a route is explicitly public.
+- Prefer small reusable functions for domain logic that may be shared across pages/actions.
+- Keep auth and onboarding invariants consistent with middleware gating.

@@ -1,0 +1,14 @@
+---
+description: Guardrails for Auth.js passkey integration
+globs: src/{auth.ts,app/login/**/*.{ts,tsx}}
+alwaysApply: false
+---
+
+# Auth.js Passkey Constraints
+
+- For passkey sign-in UI, use `signIn` from `next-auth/webauthn`.
+- Passkey-triggering email inputs must include:
+  - `name="email"`
+  - `autoComplete="username webauthn"`
+- Keep RP ID configured from environment for local/prod compatibility.
+- Keep custom session and JWT fields strongly typed, avoid `@ts-ignore` for auth/session extensions.

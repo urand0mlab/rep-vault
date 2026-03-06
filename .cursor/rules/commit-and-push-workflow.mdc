@@ -1,0 +1,14 @@
+---
+description: Standard commit and push workflow for solo development
+alwaysApply: true
+---
+
+# Commit And Push Workflow
+
+- Use Conventional Commits format: `type(scope): short summary`.
+- Preferred types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`.
+- Keep commit titles concise and imperative; include a brief body when rationale is non-obvious.
+- Before committing, verify changes with `git status`, `git diff`, and relevant lint/type/test checks.
+- Do not commit or push automatically unless the user explicitly asks.
+- When the user explicitly says to ship (for example, "commit and push" or "ship it"), commit the completed changes and push the current branch.
+- Never use force push unless explicitly requested by the user.

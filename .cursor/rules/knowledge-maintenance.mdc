@@ -1,0 +1,13 @@
+---
+description: Keep project knowledge up to date after meaningful decisions
+alwaysApply: true
+---
+
+# Knowledge Maintenance
+
+- When a meaningful technical or product decision is made, update the relevant rule file in `.cursor/rules/`.
+- When setup, scripts, env vars, or developer workflow changes, update `README.md` and `.env.example` in the same change.
+- Keep dependency versions pinned in `package.json` (no range specifiers like `^` or `~`) unless explicitly approved.
+- Record important decisions and rationale in `DECISIONS.md` (date, decision, impact, follow-up).
+- Prefer one source of truth for norms: rules in `.cursor/rules/`; keep `GEMINI.md` as a pointer only.
+- If code changes invalidate docs, include doc updates before finishing the task.

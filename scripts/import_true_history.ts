@@ -2,21 +2,43 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const API_URL = 'https://api.anatolyfit.com/graphql';
+const API_URL = process.env.ANATOLY_API_URL ?? 'https://api.anatolyfit.com/graphql';
 
-// Using the same hardcoded tokens from the original extraction script
-const HEADERS = {
-    'Host': 'api.anatolyfit.com',
-    'Cookie': 'aps-session=s%3A16kTg4QH0KdEWcUbl6_Hhp_ijDSNVG60.LJEyEAlsZARGFugVNeZhD%2FvNOBtW8c4e0CSjj1OVmng; _tt_enable_cookie=1; _ttp=01KJHJBS503M2GRS8J8Z2T2GPC_.tt.1; ttcsid=1772263695521::YYumi-Q9CkoMv16prnO6.1.1772263754765.0; ttcsid_D6FDBQ3C77U56TVASMHG=1772263695521::H-gJiYn0TFvJGELobKis.1.1772263754765.1',
-    'Authorization': 'Bearer ZXYUJWTWqwqpsILbPpSGwL-2FRCMMbgz',
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-    'Content-Type': 'application/json'
+function requireEnv(name: string): string {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(`Missing required env var: ${name}`);
+    }
+    return value;
+}
+
+function getHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+        Authorization: `Bearer ${requireEnv('ANATOLY_BEARER_TOKEN')}`,
+        'Content-Type': 'application/json',
+        'User-Agent': process.env.ANATOLY_USER_AGENT ?? 'RepVaultImporter/1.0',
+    };
+
+    const cookie = process.env.ANATOLY_COOKIE;
+    if (cookie) {
+        headers.Cookie = cookie;
+    }
+
+    return headers;
+}
+
+type CalendarWorkoutDay = {
+    date: string;
+    workoutDayId: string;
+    hasWorkout: boolean;
+    workoutName: string;
+    exerciseCount: number;
 };
 
 async function fetchGraphQL(operationName: string, query: string, variables = {}) {
     const response = await fetch(API_URL, {
         method: 'POST',
-        headers: HEADERS as Record<string, string>,
+        headers: getHeaders(),
         body: JSON.stringify({ operationName, variables, query })
     });
     if (!response.ok) {
@@ -56,7 +78,7 @@ async function getWorkoutCalendar(daysBefore: number, daysAfter: number) {
     };
 
     const data = await fetchGraphQL('GetWorkoutCalendar', query, variables);
-    return data.getWorkoutCalendar;
+    return data.getWorkoutCalendar as CalendarWorkoutDay[];
 }
 
 // 2. Get specific Workout Day details
@@ -88,13 +110,16 @@ async function getWorkoutDayById(id: string) {
 async function main() {
     console.log('Fetching true logged history from Jan 1st 2026 to present...');
 
+    const importUserEmail = requireEnv('ANATOLY_IMPORT_USER_EMAIL');
+    const importUserName = process.env.ANATOLY_IMPORT_USER_NAME ?? importUserEmail.split('@')[0] ?? 'Imported User';
+
     // Ensure default user exists
     const defaultUser = await prisma.user.upsert({
-        where: { email: 'cristiano.corrado@gmail.com' },
+        where: { email: importUserEmail },
         update: {},
         create: {
-            name: 'Cristiano',
-            email: 'cristiano.corrado@gmail.com'
+            name: importUserName,
+            email: importUserEmail
         }
     });
     console.log(`Using default user: ${defaultUser.id} (${defaultUser.email})`);
@@ -110,7 +135,7 @@ async function main() {
     const calendar = await getWorkoutCalendar(daysBefore, 14);
 
     // Filter active workouts spanning the actual dates
-    const workoutDays = calendar.filter((day: any) => {
+    const workoutDays = calendar.filter((day) => {
         // Only include if it has exercises and isn't a rest day
         return day.hasWorkout && day.exerciseCount > 0 && !day.workoutName.trim().toLowerCase().includes('rest day');
     });
@@ -157,31 +182,22 @@ async function main() {
             const numSets = planExercise.sets.length;
             const repsStr = planExercise.sets.length > 0 ? planExercise.sets[0].reps : '0';
 
-            // Find if this WorkoutExercise exists by workoutDayId and exerciseId to avoid duplicates
-            // Since we don't have a unique constraint on (workoutDayId, exerciseId), we will findFirst
-            let workoutExercise = await prisma.workoutExercise.findFirst({
+            const workoutExercise = await prisma.workoutExercise.upsert({
                 where: {
-                    workoutDayId: workoutDay.id,
-                    exerciseId: exercise.id
-                }
-            });
-
-            if (!workoutExercise) {
-                workoutExercise = await prisma.workoutExercise.create({
-                    data: {
+                    workoutDayId_exerciseId: {
                         workoutDayId: workoutDay.id,
                         exerciseId: exercise.id,
-                        sets: numSets,
-                        reps: repsStr,
-                        order: order
-                    }
-                });
-            } else {
-                workoutExercise = await prisma.workoutExercise.update({
-                    where: { id: workoutExercise.id },
-                    data: { sets: numSets, reps: repsStr, order: order }
-                });
-            }
+                    },
+                },
+                update: { sets: numSets, reps: repsStr, order: order },
+                create: {
+                    workoutDayId: workoutDay.id,
+                    exerciseId: exercise.id,
+                    sets: numSets,
+                    reps: repsStr,
+                    order: order,
+                },
+            });
 
             // Now, we iterate over the actual sets and create setLogs if they were logged
             for (const set of planExercise.sets) {

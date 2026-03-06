@@ -1,37 +1,24 @@
-# Workout Tracker Coding Standards & Practices
+# Rep Vault Agent Guidance (Cursor)
 
-## Core Stack
-- **Framework**: Next.js 16 (App Router)
-- **Database ORM**: Prisma (PostgreSQL)
-- **Styling**: Tailwind CSS 4
-- **Language**: TypeScript
+This project now uses Cursor-native rules as the source of truth for AI behavior.
 
-## Database & Environment
-- **Provider**: PostgreSQL is the default database provider. Legacy SQLite (`dev.db`) is obsolete and should not be used.
-- **Local Development**: Use Docker to spin up the entire stack, including PostgreSQL database and the Next.js app (`docker compose up -d --build`). This automatically runs seeds and migrations.
-- **Environment Variables**: Ensure `.env` is correctly pointing to the local Docker database during active development:
-  ```env
-  DATABASE_URL="postgresql://postgres:postgrespassword@localhost:5432/postgres"
-  DIRECT_URL="postgresql://postgres:postgrespassword@localhost:5432/postgres"
-  ```
-- **Prisma Workflows**: 
-  - Update client after schema alteration: `npx prisma generate`
-  - Apply schema and wipe local DB: `npx prisma db push --force-reset`
-  - Create standard migrations: `npx prisma migrate dev --name <migration_name>`
-- **Data Initialization**:
-  - The database is frequently wiped and re-seeded using scripts via `tsx`.
-  - Base training data: `npx tsx scripts/seed.ts`
-  - True history from external API: `npx tsx scripts/import_true_history.ts`
+## Source Of Truth
 
-## Design & UI Aesthetics
-- **Mobile-First Paradigm**: The application is strictly built for mobile devices. All views must be optimized for touch interactions, using `BottomNav` and appropriately sized tap targets.
-- **Dark Mode**: Tailwind CSS dark mode is globally enabled. All new components must gracefully support dark mode palettes (`dark:bg-slate-900`, etc.).
-- **Data Visualization**: Recharts is the standard library for rendering progress graphs.
+- `.cursor/rules/project-architecture.mdc`
+- `.cursor/rules/onboarding-invariants.mdc`
+- `.cursor/rules/auth-passkey-constraints.mdc`
+- `.cursor/rules/ui-mobile-darkmode.mdc`
+- `.cursor/rules/prisma-and-scripts-safety.mdc`
+- `.cursor/rules/knowledge-maintenance.mdc`
+- `.cursor/rules/commit-and-push-workflow.mdc`
 
-## App Architecture
-- **Server Components**: Keep data fetching on the server side using direct Prisma queries.
-- **Client Components**: Add `"use client"` only at the leaves of the component tree for interactive elements (such as set logging and charts).
+## How To Maintain
 
-## Authentication (Auth.js v5)
-- **Passkey Imports**: When creating a custom sign-in page, WebAuthn providers **must** use `import { signIn } from "next-auth/webauthn"` instead of the standard `next-auth/react` client bundle.
-- **Passkey Client UI**: Custom email input fields used to trigger passkey requests **must** include the attributes `name="email"` and `autoComplete="username webauthn"` to successfully hook into browser autofill and external managers (like 1Password).
+- Update rule files in `.cursor/rules/` when standards change.
+- Keep `README.md` and `.env.example` aligned with runtime setup and scripts.
+- Record significant decisions and rationale in `DECISIONS.md`.
+- Avoid duplicating normative instructions across multiple docs.
+
+## Legacy Note
+
+This file is retained as a pointer for compatibility. Rules should be added or edited in `.cursor/rules/*.mdc`, not here.

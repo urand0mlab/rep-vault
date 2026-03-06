@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 export async function completeOnboarding(formData: FormData) {
-    console.log("CACHE BUSTER: Executing the NEW upsert-powered onboarding action.");
     const session = await auth();
     if (!session?.user?.id) {
         throw new Error("Not authenticated");
@@ -50,13 +49,21 @@ export async function completeOnboarding(formData: FormData) {
         });
 
         // Force NextAuth JWT cookie to sync with DB so Middleware lets them pass
-        await unstable_update({ onboardingCompleted: true } as any);
+        await unstable_update({
+            user: {
+                ...session.user,
+                onboardingCompleted: true,
+            },
+        });
 
         revalidatePath("/");
         return { success: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error("Onboarding Action Error:", error);
-        return { success: false, error: error.message || "An unexpected database error occurred." };
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "An unexpected database error occurred.",
+        };
     }
 }
 
@@ -73,9 +80,18 @@ async function setupBaseTrainingForUser(userId: string) {
         });
     }
 
+    const today = new Date();
+    // Dashboard queries strictly by UTC midnight
+    const getNormalizedDate = (daysOffset: number = 0) => {
+        const d = new Date(today);
+        d.setUTCDate(d.getUTCDate() + daysOffset);
+        d.setUTCHours(0, 0, 0, 0);
+        return d;
+    };
+
     // --- DAY 1: Push ---
     const day1 = await prisma.workoutDay.create({
-        data: { userId, date: new Date(), name: "Chest / Shoulders / Triceps" }
+        data: { userId, date: getNormalizedDate(0), name: "Chest / Shoulders / Triceps" }
     });
 
     const d1Exercises = [
@@ -102,9 +118,8 @@ async function setupBaseTrainingForUser(userId: string) {
 
     // --- DAY 2: Pull ---
     // Start Day 2 two days from now
-    const d2Date = new Date(); d2Date.setDate(d2Date.getDate() + 2);
     const day2 = await prisma.workoutDay.create({
-        data: { userId, date: d2Date, name: "Back / Biceps" }
+        data: { userId, date: getNormalizedDate(2), name: "Back / Biceps" }
     });
 
     const d2Exercises = [
@@ -131,9 +146,8 @@ async function setupBaseTrainingForUser(userId: string) {
 
     // --- DAY 3: Legs ---
     // Start Day 3 four days from now
-    const d3Date = new Date(); d3Date.setDate(d3Date.getDate() + 4);
     const day3 = await prisma.workoutDay.create({
-        data: { userId, date: d3Date, name: "Legs" }
+        data: { userId, date: getNormalizedDate(4), name: "Legs" }
     });
 
     const d3Exercises = [

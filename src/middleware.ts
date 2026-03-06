@@ -13,7 +13,6 @@ export default auth((req) => {
 
     // 2. Authenticated users who haven't finished onboarding MUST go to Onboarding
     if (isLoggedIn) {
-        // @ts-ignore - session type extension
         const hasFinishedOnboarding = req.auth?.user?.onboardingCompleted;
 
         if (!hasFinishedOnboarding && !isOnboardingPage && !isLoginPage) {

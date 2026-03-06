@@ -1,12 +1,21 @@
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { ProgressCharts } from "./ProgressCharts";
 
 export default async function ProgressPage() {
+    const session = await auth();
+    if (!session?.user?.id) {
+        return null;
+    }
+
     // Fetch all exercises that have at least one completed set log
     const exercisesWithData = await prisma.exercise.findMany({
         where: {
             workoutExercises: {
                 some: {
+                    workoutDay: {
+                        userId: session.user.id,
+                    },
                     setLogs: {
                         some: {
                             isCompleted: true,
@@ -19,6 +28,11 @@ export default async function ProgressPage() {
         },
         include: {
             workoutExercises: {
+                where: {
+                    workoutDay: {
+                        userId: session.user.id,
+                    },
+                },
                 include: {
                     workoutDay: true,
                     setLogs: {

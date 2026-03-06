@@ -1,0 +1,13 @@
+---
+description: Safety and workflow guidance for Prisma and scripts
+globs: "{prisma/**/*,scripts/**/*.ts,docker-compose*.yml}"
+alwaysApply: false
+---
+
+# Prisma and Script Safety
+
+- Never hardcode API tokens, cookies, or personal identifiers in scripts.
+- Load operational credentials from environment variables and fail fast when missing.
+- Keep destructive operations protected by explicit confirmation flags.
+- Avoid running external data imports automatically on every dev startup.
+- Keep migration/schema updates and script behavior reflected in repository docs.

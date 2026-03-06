@@ -139,6 +139,8 @@ model WorkoutExercise {
   setLogs        SetLog[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
+
+  @@unique([workoutDayId, exerciseId])
 }
 
 model SetLog {

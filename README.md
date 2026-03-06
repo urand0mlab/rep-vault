@@ -1,15 +1,14 @@
-# 🏋️ Rep Vault
+# Rep Vault
 
-A mobile-first workout tracker built with **Next.js 16**, **Prisma**, and **Tailwind CSS 4**. Track your daily workouts, log sets & reps in real-time, and visualize your progress over time.
+Rep Vault is a mobile-first workout tracker built with Next.js App Router, Prisma, and PostgreSQL. It supports passkey login, guided onboarding, workout day execution, and progress tracking.
 
 ## Features
 
-- **Daily Dashboard** — View today's workout with date navigation
-- **Set Logging** — Log weight and reps for each set with one tap
-- **Workout History** — Browse past workouts and completed sessions
-- **Progress Charts** — Visualize strength gains with Recharts
-- **Dark Mode** — Sleek dark UI optimized for gym use
-- **Mobile-First** — Bottom navigation, touch-friendly design
+- Daily dashboard with date navigation
+- Set logging for reps and weight
+- Onboarding flow for profile + lifestyle baseline
+- Workout history and progress charts
+- Mobile-first dark UI
 
 ## Tech Stack
 
@@ -17,84 +16,108 @@ A mobile-first workout tracker built with **Next.js 16**, **Prisma**, and **Tail
 |-------|------------|
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript |
-| Database | SQLite via Prisma ORM |
+| Database | PostgreSQL via Prisma ORM |
 | Styling | Tailwind CSS 4 |
+| Auth | Auth.js v5 (Passkeys/WebAuthn) |
 | Charts | Recharts |
 | Icons | Lucide React |
 
 ## Environment Variables
 
-Create a `.env` file in the root based on your Supabase project (for Vercel deployment):
+Copy `.env.example` to `.env` and fill required values:
+
+```bash
+cp .env.example .env
+```
+
+Minimum required:
 
 ```env
-# Connect to Supabase via connection pooling with Supavisor (Transaction Mode)
-# This is required for serverless environments like Vercel
-DATABASE_URL="postgres://postgres.xxxxxx:password@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-
-# Direct connection to the database. Used for CLI migrations (npx prisma migrate)
-DIRECT_URL="postgres://postgres.xxxxxx:password@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL="postgresql://postgres:postgrespassword@localhost:5432/postgres"
+DIRECT_URL="postgresql://postgres:postgrespassword@localhost:5432/postgres"
+AUTH_SECRET="replace-with-a-long-random-secret"
+NEXT_PUBLIC_WEBAUTHN_RPID="localhost"
 ```
 
 ## Getting Started
 
-### Local Development via Docker (Recommended)
-
-The easiest way to run the app and database locally without configuring PostgreSQL is using Docker Compose.
+### Docker Development (recommended)
 
 ```bash
-# Start the app and the Postgres database
-# This automatically runs migrations and seeds the database
 docker compose up
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+This starts the app and Postgres, runs migrations, seeds base data, and launches the dev server.
 
-### Local Development (Manual Setup)
-
-If you prefer running without Docker but still using Supabase:
+Historical external import is opt-in. To run it on startup:
 
 ```bash
-# Install dependencies
-npm install
-
-# Generate Prisma client
-npx prisma generate
-
-# Run database migrations to Supabase
-npx prisma migrate dev --name init
-
-# Seed the database with workout templates
-npx tsx scripts/seed.ts
+RUN_IMPORT_ON_STARTUP=true docker compose up
 ```
 
-### Development
+### Manual Development
 
 ```bash
+npm install
+npx prisma generate
+npx prisma migrate dev --name init
+npx tsx scripts/seed.ts
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000).
 
-### Import Historical Data
+## Data Scripts
 
 ```bash
-# Import from Anatoly Fit workout CSV
+# Import true history (requires ANATOLY_* env vars)
 npx tsx scripts/import_true_history.ts
+
+# Quick API connectivity check (requires ANATOLY_* env vars)
+npx tsx scripts/test_api.ts
+
+# Dangerous: wipes workout/exercise/set data
+CONFIRM_DELETE_ALL=YES_DELETE_ALL_DATA npx tsx scripts/delete_all.ts
 ```
+
+## Knowledge Maintenance
+
+- AI guidance source of truth: `.cursor/rules/*.mdc`
+- Decision log: `DECISIONS.md`
+- Dependency policy: keep `package.json` versions pinned (no `^`/`~`) and update intentionally.
+- When behavior or workflow changes, update these together in the same PR:
+  - `.cursor/rules/*.mdc`
+  - `README.md`
+  - `.env.example` (if env/scripts change)
+  - `DECISIONS.md` (for significant decisions)
+
+## Solo Commit Workflow
+
+- Commit message standard: Conventional Commits (`type(scope): short summary`)
+- Common types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
+- Before commit: check `git status`, review `git diff`, and run relevant checks (`lint`, `typecheck`, tests as needed)
+- Agent behavior:
+  - By default, no commit/push unless you explicitly request it
+  - Trigger phrases like `commit and push` or `ship it` mean the agent should commit completed work and push the current branch
 
 ## Project Structure
 
-```
-├── base_training/       # Training data exports (CSV)
-├── prisma/              # Database schema & migrations
-├── scripts/             # Seed & import utilities
+```text
+.
+├── DECISIONS.md            # Architecture and workflow decision log
+├── prisma/                 # Prisma schema and migrations
+├── scripts/                # Seed/import/maintenance scripts
 ├── src/
-│   ├── app/             # Next.js App Router pages
-│   │   ├── history/     # Workout history page
-│   │   └── progress/    # Progress charts page
-│   ├── components/      # Reusable UI components
-│   └── lib/             # Shared utilities
-└── public/              # Static assets
+│   ├── app/                # Next.js App Router routes
+│   │   ├── login/          # Passkey sign-in
+│   │   ├── onboarding/     # 3-step onboarding
+│   │   ├── history/        # User workout history
+│   │   └── progress/       # User progress charts
+│   ├── components/         # Reusable UI components
+│   ├── lib/                # Shared utilities
+│   └── types/              # Type augmentation
+├── .cursor/rules/          # Cursor-native project guidance
+└── docker-compose.yml      # Local app + postgres stack
 ```
 
 ## License

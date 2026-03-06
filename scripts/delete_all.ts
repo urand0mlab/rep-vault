@@ -2,7 +2,17 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+function assertSafeToRun() {
+    const confirm = process.env.CONFIRM_DELETE_ALL;
+    if (confirm !== 'YES_DELETE_ALL_DATA') {
+        throw new Error(
+            'Refusing to wipe database. Set CONFIRM_DELETE_ALL=YES_DELETE_ALL_DATA to run this script intentionally.'
+        );
+    }
+}
+
 async function main() {
+    assertSafeToRun();
     console.log('Initiating complete database wipe...');
 
     // Delete everything in reverse dependency order

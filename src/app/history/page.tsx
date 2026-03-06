@@ -1,12 +1,17 @@
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { auth } from "@/auth";
 
 export default async function HistoryPage() {
+    const session = await auth();
+    if (!session?.user?.id) {
+        return null;
+    }
+
     // Fetch all historic workouts that have at least one completed set
     // Order by date descending
     const pastWorkouts = await prisma.workoutDay.findMany({
         where: {
+            userId: session.user.id,
             exercises: {
                 some: {
                     setLogs: {
