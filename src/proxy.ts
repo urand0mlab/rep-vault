@@ -1,8 +1,8 @@
 import NextAuth from "next-auth";
-import authConfig from "@/auth.config";
+import { proxyAuthConfig } from "@/auth.config";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-const { auth } = NextAuth(authConfig);
+const { auth } = NextAuth(proxyAuthConfig);
 
 const CANONICAL_HOST = (process.env.APP_CANONICAL_HOST ?? "rep-vault.com").trim().toLowerCase();
 const ADDITIONAL_ALLOWED_HOSTS = new Set(

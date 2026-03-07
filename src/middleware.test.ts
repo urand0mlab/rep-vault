@@ -11,7 +11,7 @@ jest.mock("next-auth", () => ({
 
 jest.mock("@/auth.config", () => ({
     __esModule: true,
-    default: {},
+    proxyAuthConfig: {},
 }));
 
 const { applyHostPolicy } = require("./proxy") as typeof import("./proxy");
