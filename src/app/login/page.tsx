@@ -6,6 +6,7 @@ import { Fingerprint, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const GENERIC_LOGIN_ERROR = "Sign in failed. Check your details and try again.";
+const AUTH_DEBUG_UI = process.env.NEXT_PUBLIC_AUTH_DEBUG_UI === "true";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -26,9 +27,12 @@ export default function LoginPage() {
             });
 
             if (result?.error) {
+                if (AUTH_DEBUG_UI) {
+                    console.error("[auth][client][result.error]", result.error);
+                }
                 // Keep login feedback generic to avoid leaking account existence/provider details.
                 await new Promise((resolve) => setTimeout(resolve, 350));
-                setError(GENERIC_LOGIN_ERROR);
+                setError(AUTH_DEBUG_UI ? `${GENERIC_LOGIN_ERROR} [${result.error}]` : GENERIC_LOGIN_ERROR);
             } else if (result?.ok) {
                 router.push(result.url || "/");
                 router.refresh();
