@@ -5,7 +5,7 @@ const authConfig = {
     providers: [
         Passkey({
             relayingParty: {
-                id: process.env.NEXT_PUBLIC_WEBAUTHN_RPID || "localhost",
+                id: process.env.NEXT_PUBLIC_WEBAUTHN_RPID || "rep-vault.com",
                 name: "Rep Vault Config",
             },
         }),
