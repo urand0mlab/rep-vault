@@ -18,6 +18,7 @@ Rep Vault is a mobile-first workout tracker built with Next.js App Router, Prism
 - This ensures cookie/session-token invalidation is performed server-side and redirects users to `/login`.
 - Login auth endpoints are rate-limited in `src/proxy.ts` for `/api/auth/*` POST requests (in-memory, per-process).
 - Login failures return a generic message to avoid exposing provider/internal error details useful for account enumeration.
+- Host access is enforced in `src/proxy.ts`: canonical `rep-vault.com` is allowed, `www` and any `*.vercel.app` host are redirected to canonical.
 
 ## Tech Stack
 
@@ -46,7 +47,12 @@ DATABASE_URL="postgresql://postgres:postgrespassword@localhost:5432/postgres"
 DIRECT_URL="postgresql://postgres:postgrespassword@localhost:5432/postgres"
 AUTH_SECRET="replace-with-a-long-random-secret"
 NEXT_PUBLIC_WEBAUTHN_RPID="localhost"
+APP_CANONICAL_HOST="rep-vault.com"
 ```
+
+Production note:
+- Set `NEXT_PUBLIC_WEBAUTHN_RPID=rep-vault.com` in Vercel Production.
+- Keep `APP_CANONICAL_HOST=rep-vault.com` so direct `*.vercel.app` entry is redirected to your custom domain.
 
 Optional auth-throttling controls:
 

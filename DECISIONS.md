@@ -48,6 +48,12 @@ Use this file to capture important architectural, product, and operational decis
 - Impact: Logout behavior is centralized, predictable, and aligned with Auth.js-managed session invalidation.
 - Follow-up: Keep logout guidance in `.cursor/rules/auth-passkey-constraints.mdc` and `README.md`.
 
+## 2026-03-07 - Canonical domain lock-down via edge host policy
+- Context: Custom domain is fronted by Cloudflare, but direct `*.vercel.app` access remained reachable and bypassed canonical domain routing.
+- Decision: Enforce host policy in `src/proxy.ts` using `APP_CANONICAL_HOST`, redirecting `www` and any `*.vercel.app` host to canonical `rep-vault.com`.
+- Impact: Public traffic consolidates on the custom domain, improving consistency for auth, cookies, passkey RP usage, and user-facing URLs.
+- Follow-up: Keep `NEXT_PUBLIC_WEBAUTHN_RPID` set to canonical domain in Vercel production and document host policy in `README.md`.
+
 ## 2026-03-06 - Add login anti-enumeration protections
 - Context: Passkey login flow needed protection against brute-force and account enumeration signals.
 - Decision: Add in-memory middleware throttling for `/api/auth/*` POST requests and make login failures use generic user-facing messages.

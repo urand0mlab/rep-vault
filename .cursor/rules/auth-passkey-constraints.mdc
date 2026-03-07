@@ -11,8 +11,10 @@ alwaysApply: false
   - `name="email"`
   - `autoComplete="username webauthn"`
 - Keep RP ID configured from environment for local/prod compatibility.
+- In production, keep `NEXT_PUBLIC_WEBAUTHN_RPID` aligned with the canonical domain (`rep-vault.com`).
 - Keep custom session and JWT fields strongly typed, avoid `@ts-ignore` for auth/session extensions.
 - Logout must go through a server action that calls `signOut` from `@/auth` (not client-only state clearing), redirecting to `/login`.
 - For JWT strategy, treat logout as cookie/session-token invalidation; if full server-side token revocation is required later, introduce a dedicated revocation/versioning store and enforce it in auth callbacks.
 - Apply auth-endpoint rate limiting in edge request handling (`proxy.ts`) for `/api/auth/*` POST traffic. Default to in-memory protection unless a shared limiter is introduced.
 - Keep login failure text generic (do not surface raw provider errors) to reduce user-enumeration signals.
+- Enforce canonical host redirects in `proxy.ts` so direct `*.vercel.app` access is not used in production.
