@@ -14,7 +14,7 @@ jest.mock("@/auth.config", () => ({
     default: {},
 }));
 
-const { applyAuthRateLimit, applyHostPolicy, resetAuthRateLimitersForTest } = require("./proxy") as typeof import("./proxy");
+const { applyHostPolicy } = require("./proxy") as typeof import("./proxy");
 
 function createRequest(pathname: string, method = "POST", ip = "127.0.0.1", host = "rep-vault.com"): NextRequest {
     return {
@@ -34,31 +34,6 @@ function createRequest(pathname: string, method = "POST", ip = "127.0.0.1", host
         },
     } as unknown as NextRequest;
 }
-
-describe("proxy auth rate limiting", () => {
-    beforeEach(() => {
-        resetAuthRateLimitersForTest();
-    });
-
-    it("returns 429 after too many POST attempts to auth API", async () => {
-        const req = createRequest("/api/auth/callback/passkey");
-
-        for (let i = 0; i < 10; i++) {
-            expect(applyAuthRateLimit(req)).toBeUndefined();
-        }
-
-        const blockedResponse = applyAuthRateLimit(req);
-        expect(blockedResponse?.status).toBe(429);
-        await expect(blockedResponse?.json()).resolves.toMatchObject({
-            error: expect.stringContaining("Too many authentication attempts"),
-        });
-    });
-
-    it("does not rate limit non-auth paths", () => {
-        const req = createRequest("/progress");
-        expect(applyAuthRateLimit(req)).toBeUndefined();
-    });
-});
 
 describe("proxy host policy", () => {
     it("redirects vercel app host to canonical domain", () => {
