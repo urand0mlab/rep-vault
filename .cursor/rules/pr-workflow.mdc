@@ -12,5 +12,11 @@ alwaysApply: true
   - Push branch to `origin`.
   - Open a PR targeting `main` with clear summary and test plan.
   - After PR merge: switch to `main`, pull latest `origin/main`, and create a fresh branch for the next task.
+  - Assume merged PR branches may be deleted on remote.
+  - Never continue new work on a just-merged branch name.
+  - If current local branch tracks a deleted remote branch, immediately recover by:
+    - `git switch main`
+    - `git pull --ff-only origin main`
+    - `git switch -c <new-branch-name>`
 - Use direct commit+push to `main` only when the user explicitly asks for bypassing PR.
 - Keep PR scope focused and include docs/rules updates when behavior changes.

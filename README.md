@@ -124,6 +124,8 @@ CONFIRM_DELETE_ALL=YES_DELETE_ALL_DATA npx tsx scripts/delete_all.ts
   - By default, no commit/push unless you explicitly request it
   - Default shipping path is PR-first: branch -> commit -> push branch -> open PR to `main`
   - After PR merge: switch to `main`, pull latest `origin/main`, then create a fresh branch for the next task
+  - Do not continue on a merged branch (remote branch may be auto-deleted)
+  - If branch was merged/deleted, recover with: `git switch main` -> `git pull --ff-only origin main` -> `git switch -c <new-branch>`
   - Use direct push to `main` only when explicitly requested
   - PR template: `.github/pull_request_template.md`
 
