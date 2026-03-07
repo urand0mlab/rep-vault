@@ -1,21 +1,7 @@
 import type { NextAuthConfig } from "next-auth";
 import Passkey from "next-auth/providers/passkey";
 
-const authConfig = {
-    providers: [
-        Passkey({
-            relayingParty: {
-                id: process.env.NEXT_PUBLIC_WEBAUTHN_RPID || "rep-vault.com",
-                name: "Rep Vault Config",
-            },
-        }),
-    ],
-    experimental: {
-        enableWebAuthn: true,
-    },
-    pages: {
-        signIn: "/login",
-    },
+const sharedAuthConfig = {
     session: {
         strategy: "jwt",
     },
@@ -40,6 +26,29 @@ const authConfig = {
             return session;
         },
     },
+} satisfies Pick<NextAuthConfig, "session" | "callbacks">;
+
+export const proxyAuthConfig = {
+    providers: [],
+    ...sharedAuthConfig,
+} satisfies NextAuthConfig;
+
+const authConfig = {
+    providers: [
+        Passkey({
+            relayingParty: {
+                id: process.env.NEXT_PUBLIC_WEBAUTHN_RPID || "rep-vault.com",
+                name: "Rep Vault Config",
+            },
+        }),
+    ],
+    experimental: {
+        enableWebAuthn: true,
+    },
+    pages: {
+        signIn: "/login",
+    },
+    ...sharedAuthConfig,
 } satisfies NextAuthConfig;
 
 export default authConfig;
