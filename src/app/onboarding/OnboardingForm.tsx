@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { completeOnboarding } from "./actions";
 import { Dumbbell, Ruler, Activity, ArrowRight, CheckCircle2, Loader2, Info } from "lucide-react";
 
@@ -30,9 +30,11 @@ export default function OnboardingForm() {
     const handleNext = () => { setError(null); setStep((s) => Math.min(s + 1, 3)); };
     const handleBack = () => { setError(null); setStep((s) => Math.max(s - 1, 1)); };
 
-    const handleSubmit = async (formData: FormData) => {
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
         setIsSubmitting(true);
         setError(null);
+        const formData = new FormData(event.currentTarget);
 
         // Append our state to the form data because it's split across multiple virtual steps
         if (training) formData.set("trainingSelection", training);
@@ -77,7 +79,16 @@ export default function OnboardingForm() {
                     ))}
                 </div>
 
-                <form action={handleSubmit}>
+                {error ? (
+                    <div
+                        className="mb-4 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-200"
+                        role="alert"
+                    >
+                        {error}
+                    </div>
+                ) : null}
+
+                <form onSubmit={handleSubmit} noValidate>
                     {/* Step 1: Training Selection */}
                     {step === 1 && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

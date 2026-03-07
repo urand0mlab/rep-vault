@@ -1,6 +1,8 @@
 import type { NextAuthConfig } from "next-auth";
 import Passkey from "next-auth/providers/passkey";
 
+const AUTH_DEBUG_LOGGING = process.env.AUTH_DEBUG_LOGGING === "true";
+
 const sharedAuthConfig = {
     session: {
         strategy: "jwt",
@@ -48,6 +50,22 @@ const authConfig = {
     pages: {
         signIn: "/login",
     },
+    ...(AUTH_DEBUG_LOGGING
+        ? {
+              debug: true,
+              logger: {
+                  error(error, ...message) {
+                      console.error("[auth][logger][error]", error, ...message);
+                  },
+                  warn(code) {
+                      console.warn("[auth][logger][warn]", code);
+                  },
+                  debug(code, ...message) {
+                      console.debug("[auth][logger][debug]", code, ...message);
+                  },
+              },
+          }
+        : {}),
     ...sharedAuthConfig,
 } satisfies NextAuthConfig;
 
