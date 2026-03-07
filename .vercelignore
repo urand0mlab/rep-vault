@@ -1,0 +1,23 @@
+# Agent/IDE guidance and local metadata
+.agents/
+.cursor/
+.cursorignore
+.cursorrules
+
+# Repo/process docs not needed at runtime
+GEMINI.md
+README.md
+DECISIONS.md
+
+# GitHub-only metadata
+.github/
+
+# Local environment files should never be uploaded
+.env
+.env.local
+.env.*.local
+.env.vercel.*
+
+# Logs and local artifacts
+*.log
+coverage/
